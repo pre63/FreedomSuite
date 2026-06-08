@@ -1,0 +1,30 @@
+Categories:
+  - Internet
+  - Time
+License: Apache-2.0
+AuthorName: Freedom Suite
+SourceCode: https://github.com/freedomsuite/FreedomSuite
+IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+
+AutoName: Freedom Calendar
+Summary: CalDAV calendar with encrypted local storage
+Description: |-
+  Freedom Calendar syncs events over CalDAV. Data is stored locally in
+  an encrypted SQLCipher database. No telemetry.
+
+RepoType: git
+Repo: https://github.com/freedomsuite/FreedomSuite
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: calendar-v1.0.0
+    gradle:
+      - :apps:calendar:assembleProdRelease
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags calendar-v%v
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1
+
+AntiFeatures: []

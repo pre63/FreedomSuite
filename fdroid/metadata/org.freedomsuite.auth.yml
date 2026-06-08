@@ -1,0 +1,29 @@
+Categories:
+  - Security
+License: Apache-2.0
+AuthorName: Freedom Suite
+SourceCode: https://github.com/freedomsuite/FreedomSuite
+IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+
+AutoName: Freedom Auth
+Summary: TOTP authenticator with encrypted backup
+Description: |-
+  Freedom Auth stores TOTP secrets in an encrypted database. Scan QR codes
+  offline. Optional encrypted backup via Freedom Sync. No cloud accounts.
+
+RepoType: git
+Repo: https://github.com/freedomsuite/FreedomSuite
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: auth-v1.0.0
+    gradle:
+      - :apps:auth:assembleProdRelease
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags auth-v%v
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1
+
+AntiFeatures: []

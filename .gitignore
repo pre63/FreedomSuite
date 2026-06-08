@@ -1,0 +1,24 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+**/build/
+captures/
+.externalNativeBuild
+.cxx
+*.apk
+*.ap_
+*.aab
+
+# Rust
+/sync/freedom-sync-core/target/
+
+# Secrets
+*.keystore
+.env
+.env.*
+
+# Android Studio
+*.hprof

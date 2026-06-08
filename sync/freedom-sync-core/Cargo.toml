@@ -1,0 +1,19 @@
+[package]
+name = "freedom-sync-core"
+version = "0.1.0"
+edition = "2021"
+description = "Freedom Sync — encrypted cross-device blob sync (Rust core)"
+license = "Apache-2.0"
+
+[lib]
+name = "freedom_sync_core"
+crate-type = ["lib", "staticlib", "cdylib"]
+
+[dependencies]
+zeroize = { version = "1.8", features = ["derive"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "z"
+strip = true

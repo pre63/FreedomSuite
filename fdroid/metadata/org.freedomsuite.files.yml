@@ -1,0 +1,35 @@
+Categories:
+  - Multimedia
+  - System
+License: Apache-2.0
+AuthorName: Freedom Suite
+SourceCode: https://github.com/freedomsuite/FreedomSuite
+IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+
+AutoName: Freedom Files
+Summary: Encrypted photos and files with on-device vision search
+Description: |-
+  Freedom Files stores photos and documents encrypted on device. On-device
+  ONNX models index objects, faces, and OCR text for local search — no
+  cloud vision APIs. Freedom Sync backup to your storage.
+
+RepoType: git
+Repo: https://github.com/freedomsuite/FreedomSuite
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: files-v1.0.0
+    prebuild:
+      - bash -lc './scripts/fetch-ml-models.sh'
+    gradle:
+      - :apps:files:assembleProdRelease
+    scanignore:
+      - core/ml/src/main/assets/models
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags files-v%v
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1
+
+AntiFeatures: []

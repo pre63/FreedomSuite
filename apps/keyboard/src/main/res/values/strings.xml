@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Freedom Keyboard</string>
+    <string name="keyboard_label">Freedom Keyboard</string>
+    <string name="voice_input_label">Freedom Voice Input</string>
+    <string name="settings_title">Freedom Keyboard</string>
+    <string name="settings_subtitle">Private keyboard · local predictions · on-device dictation</string>
+    <string name="enable_keyboard">Enable keyboard</string>
+    <string name="choose_keyboard">Choose default keyboard</string>
+    <string name="enable_voice">Enable voice input</string>
+    <string name="voice_model_title">Voice model</string>
+    <string name="voice_model_body">Streaming English ASR (Sherpa-ONNX Zipformer) ships in a future update. Models stay on your device.</string>
+    <string name="privacy_note">No internet permission. Typing history and learned words stay encrypted on this device.</string>
+    <string name="suggestions_learned">Learned words: %1$d</string>
+</resources>

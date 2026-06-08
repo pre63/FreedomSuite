@@ -1,0 +1,36 @@
+Categories:
+  - Internet
+  - Email
+License: Apache-2.0
+AuthorName: Freedom Suite
+SourceCode: https://github.com/freedomsuite/FreedomSuite
+IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+WebSite: https://github.com/freedomsuite/FreedomSuite
+
+AutoName: Freedom Inbox
+Summary: Private IMAP/SMTP mail — no tracking
+Description: |-
+  Freedom Inbox syncs mail from your provider (e.g. mailbox.org) over
+  IMAP/SMTP. Local mail is stored in an encrypted database. No analytics,
+  no crash reporting, no Google Play Services.
+
+  Swipe to archive. Local and server search. Calendar invite detection.
+
+RepoType: git
+Repo: https://github.com/freedomsuite/FreedomSuite
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: inbox-v1.0.0
+    gradle:
+      - :apps:inbox:assembleProdRelease
+    scanignore:
+      - core/ml/src/main/assets/models
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags inbox-v%v
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1
+
+AntiFeatures: []

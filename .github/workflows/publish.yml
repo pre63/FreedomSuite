@@ -1,0 +1,124 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App to build (all, inbox, files, …)
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - inbox
+          - calendar
+          - messages
+          - auth
+          - files
+          - keyboard
+          - search
+      tag:
+        description: Release tag (manual runs only; leave empty for auto)
+        required: false
+        type: string
+  push:
+    tags:
+      - 'release-*'
+      - 'suite-*'
+      - '*-v*'
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build and publish APKs
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+      - name: Install SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Resolve apps to build
+        id: plan
+        run: |
+          chmod +x scripts/lib/apps.sh scripts/collect-release-apks.sh
+          # shellcheck source=scripts/lib/apps.sh
+          source scripts/lib/apps.sh
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            APP="${{ inputs.app }}"
+          else
+            mapfile -t APPS < <(resolve_apps_from_tag "${GITHUB_REF_NAME}")
+            if [[ ${#APPS[@]} -eq 1 ]]; then
+              APP="${APPS[0]}"
+            else
+              APP="all"
+            fi
+          fi
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "Building: $APP"
+
+      - name: Fetch release assets
+        run: ./scripts/fdroid-prebuild.sh
+
+      - name: Privacy audit
+        run: ./gradlew --no-daemon privacyAudit
+
+      - name: Integration tests
+        run: ./gradlew --no-daemon integrationTest
+
+      - name: Build prod release APKs
+        run: |
+          if [[ "${{ steps.plan.outputs.app }}" == "all" ]]; then
+            ./gradlew --no-daemon assembleFdroidRelease
+          else
+            ./gradlew --no-daemon ":apps:${{ steps.plan.outputs.app }}:assembleProdRelease"
+          fi
+
+      - name: Collect APKs with friendly names
+        run: |
+          if [[ "${{ steps.plan.outputs.app }}" == "all" ]]; then
+            ./scripts/collect-release-apks.sh release-apks
+          else
+            ./scripts/collect-release-apks.sh release-apks "${{ steps.plan.outputs.app }}"
+          fi
+          ls -lh release-apks/
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ -n "${{ inputs.tag }}" ]]; then
+              echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            else
+              echo "name=release-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: Freedom Suite ${{ steps.tag.outputs.name }}
+          files: |
+            release-apks/*.apk
+            release-apks/manifest.json
+          generate_release_notes: true
+          fail_on_unmatched_files: true

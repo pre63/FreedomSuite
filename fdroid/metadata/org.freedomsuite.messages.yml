@@ -1,0 +1,31 @@
+Categories:
+  - Internet
+  - Multimedia
+License: Apache-2.0
+AuthorName: Freedom Suite
+SourceCode: https://github.com/freedomsuite/FreedomSuite
+IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+
+AutoName: Freedom Messages
+Summary: Encrypted channels with photos and Freedom Sync
+Description: |-
+  Freedom Messages provides local channels for notes and photo sharing.
+  Attachments are encrypted on disk. Optional Freedom Sync backup to your
+  WebDAV or S3-compatible storage.
+
+RepoType: git
+Repo: https://github.com/freedomsuite/FreedomSuite
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: messages-v1.0.0
+    gradle:
+      - :apps:messages:assembleProdRelease
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags messages-v%v
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1
+
+AntiFeatures: []

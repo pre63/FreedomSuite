@@ -1,0 +1,30 @@
+Categories:
+  - System
+License: Apache-2.0
+AuthorName: Freedom Suite
+SourceCode: https://github.com/freedomsuite/FreedomSuite
+IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+
+AutoName: Freedom Search
+Summary: Unified on-device search across Freedom apps
+Description: |-
+  Freedom Search queries Mail, Photos, Calendar, and Messages through
+  signed local ContentProviders. All indexing happens on device — no
+  network calls. Requires other Freedom Suite apps for results.
+
+RepoType: git
+Repo: https://github.com/freedomsuite/FreedomSuite
+
+Builds:
+  - versionName: 0.1.0
+    versionCode: 1
+    commit: search-v0.1.0
+    gradle:
+      - :apps:search:assembleProdRelease
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags search-v%v
+CurrentVersion: 0.1.0
+CurrentVersionCode: 1
+
+AntiFeatures: []
