@@ -121,10 +121,10 @@ main() {
     publish_local "$tag"
   else
     # Ensure main is pushed so CI builds latest code
-    current_branch="$(git -C "$ROOT" branch --show-current)"
-    if [[ "$current_branch" == "main" || "$current_branch" == "master" ]]; then
-      echo "Pushing $current_branch…"
-      git -C "$ROOT" push origin "$current_branch" || true
+    branch="$(git -C "$ROOT" branch --show-current)"
+    if [[ "$branch" == "main" || "$branch" == "master" ]]; then
+      echo "Pushing ${branch}..."
+      git -C "$ROOT" push origin "$branch" || true
     fi
     publish_remote "$tag"
   fi
