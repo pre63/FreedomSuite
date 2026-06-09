@@ -71,6 +71,27 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun updateEvent(
+        uid: String,
+        title: String,
+        description: String?,
+        location: String?,
+        startEpochMs: Long,
+        endEpochMs: Long,
+        onSaved: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.updateEvent(uid, title, description, location, startEpochMs, endEpochMs)
+                .onSuccess {
+                    _activeEvent.value = it
+                    onSaved()
+                }
+                .onFailure { _error.value = it.message ?: "Update failed" }
+            _isLoading.value = false
+        }
+    }
+
     fun deleteEvent(uid: String, onDeleted: () -> Unit) {
         viewModelScope.launch {
             repository.deleteEvent(uid)

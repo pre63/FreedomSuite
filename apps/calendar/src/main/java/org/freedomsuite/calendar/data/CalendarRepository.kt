@@ -92,6 +92,26 @@ class CalendarRepository(context: Context) {
         )
     }
 
+    suspend fun updateEvent(
+        uid: String,
+        title: String,
+        description: String?,
+        location: String?,
+        startEpochMs: Long,
+        endEpochMs: Long,
+    ): Result<EventEntity> = runCatching {
+        val existing = dao.getEvent(uid) ?: error("Event not found")
+        val updated = existing.copy(
+            title = title.trim(),
+            description = description?.trim()?.takeIf { it.isNotEmpty() },
+            location = location?.trim()?.takeIf { it.isNotEmpty() },
+            startEpochMs = startEpochMs,
+            endEpochMs = endEpochMs,
+        )
+        dao.upsertEvent(updated)
+        updated
+    }
+
     suspend fun deleteEvent(uid: String): Result<Unit> = runCatching {
         dao.deleteEvent(uid)
     }

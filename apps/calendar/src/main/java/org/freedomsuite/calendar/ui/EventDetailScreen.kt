@@ -29,6 +29,7 @@ fun EventDetailScreen(
     viewModel: CalendarViewModel,
     uid: String,
     onBack: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     LaunchedEffect(uid) {
         viewModel.openEvent(uid)
@@ -70,6 +71,14 @@ fun EventDetailScreen(
                     Text(text = it, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
                 }
                 Button(
+                    onClick = onEdit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                ) {
+                    Text("Edit event")
+                }
+                Button(
                     onClick = {
                         viewModel.deleteEvent(uid) {
                             viewModel.closeEvent()
@@ -78,7 +87,7 @@ fun EventDetailScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 24.dp),
+                        .padding(top = 8.dp),
                 ) {
                     Text("Delete event")
                 }
