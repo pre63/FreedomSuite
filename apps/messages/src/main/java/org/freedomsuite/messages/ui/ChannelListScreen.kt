@@ -12,11 +12,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -28,6 +31,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,11 +50,31 @@ fun ChannelListScreen(
     onSettings: () -> Unit,
 ) {
     val channels by viewModel.channels.collectAsState()
+    var channelToDelete by remember { mutableStateOf<ChannelWithPreview?>(null) }
+
+    if (channelToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { channelToDelete = null },
+            title = { Text("Delete channel?") },
+            text = { Text("“${channelToDelete!!.channel.name}” and its messages will be removed.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteChannel(channelToDelete!!.channel.id)
+                        channelToDelete = null
+                    },
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { channelToDelete = null }) { Text("Cancel") }
+            },
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Messages") },
+                title = { Text("Notes") },
                 actions = {
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
@@ -76,9 +102,9 @@ fun ChannelListScreen(
                     contentDescription = null,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
-                Text("No channels yet", style = MaterialTheme.typography.titleMedium)
+                Text("No notes yet", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Create a personal channel to broadcast secrets to yourself.",
+                    "Create an encrypted channel for private notes and photos.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
@@ -95,6 +121,7 @@ fun ChannelListScreen(
                     ChannelRow(
                         item = item,
                         onClick = { onChannelClick(item.channel.id) },
+                        onDelete = { channelToDelete = item },
                     )
                 }
             }
@@ -103,7 +130,11 @@ fun ChannelListScreen(
 }
 
 @Composable
-private fun ChannelRow(item: ChannelWithPreview, onClick: () -> Unit) {
+private fun ChannelRow(
+    item: ChannelWithPreview,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val channel = item.channel
     val type = runCatching { ChannelType.valueOf(channel.type) }.getOrDefault(ChannelType.PERSONAL)
     Card(
@@ -122,12 +153,12 @@ private fun ChannelRow(item: ChannelWithPreview, onClick: () -> Unit) {
                 },
                 contentDescription = null,
             )
-            Column(modifier = Modifier.padding(start = 16.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
                 Text(text = channel.name, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = when (type) {
-                        ChannelType.PERSONAL -> "Just you · broadcast to yourself"
-                        ChannelType.GROUP -> "${channel.memberCount} member(s) · private group"
+                        ChannelType.PERSONAL -> "Encrypted notes · this device"
+                        ChannelType.GROUP -> "Encrypted notes · this device"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -143,6 +174,9 @@ private fun ChannelRow(item: ChannelWithPreview, onClick: () -> Unit) {
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete channel")
             }
         }
     }
