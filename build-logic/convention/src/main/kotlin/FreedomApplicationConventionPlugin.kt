@@ -5,6 +5,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getByType
+import java.util.Properties
 
 class FreedomApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -17,17 +18,21 @@ class FreedomApplicationConventionPlugin : Plugin<Project> {
             val appName = path.substringAfterLast(":").replaceFirstChar { it.uppercase() }
                 .let { name ->
                     when (name) {
-                        "Inbox" -> "Freedom Inbox"
-                        "Calendar" -> "Freedom Calendar"
-                        "Messages" -> "Freedom Messages"
-                        "Chat" -> "Freedom Chat"
-                        "Auth" -> "Freedom Auth"
-                        "Files" -> "Freedom Files"
-                        "Keyboard" -> "Freedom Keyboard"
-                        "Search" -> "Freedom Search"
-                        else -> "Freedom $name"
+                        "Inbox" -> "Inbox"
+                        "Calendar" -> "Calendar"
+                        "Messages" -> "Messages"
+                        "Chat" -> "Chat"
+                        "Auth" -> "Auth"
+                        "Files" -> "Files"
+                        "Keyboard" -> "Keyboard"
+                        "Search" -> "Search"
+                        else -> name
                     }
                 }
+
+            val includeEmulatorAbis = readIncludeEmulatorAbis(target)
+            val deviceAbis = listOf("arm64-v8a", "armeabi-v7a")
+            val emulatorAbis = listOf("x86_64", "x86")
 
             extensions.configure<ApplicationExtension> {
                 compileSdk = 35
@@ -36,10 +41,6 @@ class FreedomApplicationConventionPlugin : Plugin<Project> {
                     minSdk = 26
                     targetSdk = 35
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-                    ndk {
-                        // F-Droid / real devices only — drop x86 emulator ABIs to shrink native ML libs.
-                        abiFilters += listOf("arm64-v8a", "armeabi-v7a")
-                    }
                 }
 
                 compileOptions {
@@ -60,11 +61,23 @@ class FreedomApplicationConventionPlugin : Plugin<Project> {
                         versionNameSuffix = "-dev"
                         buildConfigField("String", "APP_NAME", "\"$appName (Dev)\"")
                         buildConfigField("boolean", "PRIVACY_STRICT", "false")
+                        ndk {
+                            abiFilters.clear()
+                            abiFilters += deviceAbis
+                            if (includeEmulatorAbis) {
+                                abiFilters += emulatorAbis
+                            }
+                        }
                     }
                     create("prod") {
                         dimension = "environment"
                         buildConfigField("String", "APP_NAME", "\"$appName\"")
                         buildConfigField("boolean", "PRIVACY_STRICT", "true")
+                        ndk {
+                            // Release / F-Droid: arm devices only — keeps ONNX/SQLCipher libs smaller.
+                            abiFilters.clear()
+                            abiFilters += deviceAbis
+                        }
                     }
                 }
 
@@ -123,5 +136,16 @@ class FreedomApplicationConventionPlugin : Plugin<Project> {
                 add("implementation", project(":core:applock"))
             }
         }
+    }
+
+    private fun readIncludeEmulatorAbis(project: Project): Boolean {
+        if (project.findProperty("includeEmulatorAbis")?.toString() == "true") {
+            return true
+        }
+        val localProps = project.rootProject.file("local.properties")
+        if (!localProps.exists()) return false
+        val props = Properties()
+        localProps.inputStream().use { props.load(it) }
+        return props.getProperty("freedom.includeEmulatorAbis") == "true"
     }
 }

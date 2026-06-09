@@ -22,12 +22,24 @@ val fdroidAppModules = listOf(
     ":apps:search",
 )
 
+/** All installable application modules (dev daily driver). */
+val devAppModules = fdroidAppModules + listOf(":apps:chat")
+
+tasks.register<Exec>("mlIntegrationTest") {
+    group = "verification"
+    description = "Runs ONNX vision/OCR regression tests (Python + bundled models)"
+    workingDir(rootDir)
+    commandLine("bash", "-c", "./scripts/setup-ml-tools.sh && .venv-ml-quantize/bin/python scripts/ml-integration-test.py")
+}
+
 tasks.register("integrationTest") {
     group = "verification"
-    description = "Runs integration tests against local mock mailbox.org servers"
+    description = "Runs integration tests against local mock mailbox.org servers and on-device ML"
     dependsOn(
         ":testing:mock-server:test",
         ":testing:integration:testDevDebugUnitTest",
+        ":core:ml:testDevDebugUnitTest",
+        "mlIntegrationTest",
     )
 }
 
@@ -39,10 +51,10 @@ tasks.register("storageAudit") {
 
 tasks.register("privacyAudit") {
     group = "verification"
-    description = "Audits third-party deps, analytics SDKs, and privacy enforcement"
+    description = "Audits third-party deps, manifests, network egress, and privacy enforcement"
     dependsOn(
         ":testing:mock-server:test",
-        fdroidAppModules.map { "$it:dependencies" },
+        fdroidAppModules.map { "$it:assembleProdRelease" },
     )
 }
 
@@ -50,6 +62,24 @@ tasks.register("assembleFdroidRelease") {
     group = "build"
     description = "Assembles prodRelease APKs for all F-Droid apps"
     dependsOn(fdroidAppModules.map { "$it:assembleProdRelease" })
+}
+
+tasks.register("assembleDevDebug") {
+    group = "build"
+    description = "Assembles devDebug APKs for all apps (use for emulator/device install)"
+    dependsOn(devAppModules.map { "$it:assembleDevDebug" })
+}
+
+tasks.register("installDevDebugApps") {
+    group = "install"
+    description = "Installs devDebug APKs sequentially on the connected device/emulator"
+    val installTasks = devAppModules.map { path ->
+        project(path).tasks.named("installDevDebug")
+    }
+    installTasks.forEach { dependsOn(it) }
+    for (i in 1 until installTasks.size) {
+        installTasks[i].configure { mustRunAfter(installTasks[i - 1]) }
+    }
 }
 
 tasks.register("fdroidVerify") {

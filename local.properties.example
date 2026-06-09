@@ -1,0 +1,6 @@
+# Copy to local.properties (gitignored) and adjust paths.
+sdk.dir=/Users/YOU/Library/Android/sdk
+
+# Set true only for x86/x86_64 emulator images (Intel Mac or legacy AVDs).
+# arm64 emulators (Apple Silicon default) do NOT need this.
+freedom.includeEmulatorAbis=false
