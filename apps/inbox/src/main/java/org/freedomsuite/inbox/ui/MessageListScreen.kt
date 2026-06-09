@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.freedomsuite.inbox.data.MailMessageEntity
+import org.freedomsuite.inbox.spam.SpamVerdict
 import java.text.DateFormat
 import java.util.Date
 
@@ -181,8 +183,11 @@ fun MessageListScreen(
                         items(messages, key = { "${it.folder}:${it.uid}" }) { message ->
                             SwipeableMessageRow(
                                 message = message,
+                                inSpamFolder = viewModel.isSpamFolder(currentFolder),
                                 onClick = { onMessageClick(message.uid) },
                                 onArchive = { viewModel.archiveMessage(message.folder, message.uid) },
+                                onSpam = { viewModel.reportSpam(message.folder, message.uid) },
+                                onNotSpam = { viewModel.markNotSpam(message.folder, message.uid) },
                             )
                         }
                     }
@@ -199,33 +204,52 @@ private fun displayFolderName(folder: String): String =
 @Composable
 private fun SwipeableMessageRow(
     message: MailMessageEntity,
+    inSpamFolder: Boolean,
     onClick: () -> Unit,
     onArchive: () -> Unit,
+    onSpam: () -> Unit,
+    onNotSpam: () -> Unit,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onArchive()
-                true
-            } else {
-                false
+            when (value) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    if (inSpamFolder) onNotSpam() else onArchive()
+                    true
+                }
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    if (!inSpamFolder) onSpam()
+                    true
+                }
+                else -> false
             }
         },
     )
 
     SwipeToDismissBox(
         state = dismissState,
-        enableDismissFromStartToEnd = false,
+        enableDismissFromStartToEnd = !inSpamFolder,
         backgroundContent = {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.End,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = if (inSpamFolder) Arrangement.End else Arrangement.SpaceBetween,
             ) {
-                Icon(Icons.Default.Archive, contentDescription = "Archive")
-                Text("Archive")
+                if (!inSpamFolder) {
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Icon(Icons.Default.Report, contentDescription = "Spam")
+                        Text("Spam")
+                    }
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Icon(
+                        if (inSpamFolder) Icons.Default.Report else Icons.Default.Archive,
+                        contentDescription = if (inSpamFolder) "Not spam" else "Archive",
+                    )
+                    Text(if (inSpamFolder) "Not spam" else "Archive")
+                }
             }
         },
     ) {
@@ -243,13 +267,24 @@ private fun MessageRow(message: MailMessageEntity, onClick: () -> Unit) {
             .clickable(onClick = onClick),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = message.subject,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = if (message.isRead) FontWeight.Normal else FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = message.subject,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = if (message.isRead) FontWeight.Normal else FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (message.spamVerdict == SpamVerdict.SUSPECT.name) {
+                    Text(
+                        text = "Suspect",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
             Text(
                 text = message.from,
                 style = MaterialTheme.typography.bodyMedium,

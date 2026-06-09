@@ -108,17 +108,38 @@ internal class ImapConnection(
         }
     }
 
-    suspend fun moveToArchive(folder: String, uid: Long): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            select(folder).getOrThrow()
-            val folders = listFolders().getOrDefault(emptyList())
-            val archiveFolder = folders.firstOrNull {
-                it.equals("Archive", ignoreCase = true) ||
-                    it.endsWith("/Archive", ignoreCase = true)
-            } ?: "Archive"
-            val response = command("UID MOVE", uid.toString(), quote(archiveFolder))
-            if (!response.contains("OK")) error("MOVE failed: $response")
+    suspend fun moveToArchive(folder: String, uid: Long): Result<Unit> =
+        moveToFolder(folder, uid, resolveArchiveFolder())
+
+    suspend fun moveToSpam(folder: String, uid: Long): Result<Unit> =
+        moveToFolder(folder, uid, resolveSpamFolder())
+
+    suspend fun moveToInbox(folder: String, uid: Long): Result<Unit> =
+        moveToFolder(folder, uid, "INBOX")
+
+    private suspend fun moveToFolder(sourceFolder: String, uid: Long, destination: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                select(sourceFolder).getOrThrow()
+                val response = command("UID MOVE", uid.toString(), quote(destination))
+                if (!response.contains("OK")) error("MOVE failed: $response")
+            }
         }
+
+    private suspend fun resolveArchiveFolder(): String {
+        val folders = listFolders().getOrDefault(emptyList())
+        return folders.firstOrNull {
+            it.equals("Archive", ignoreCase = true) ||
+                it.endsWith("/Archive", ignoreCase = true)
+        } ?: "Archive"
+    }
+
+    private suspend fun resolveSpamFolder(): String {
+        val folders = listFolders().getOrDefault(emptyList())
+        return folders.firstOrNull {
+            val leaf = it.substringAfterLast('/').lowercase()
+            leaf == "spam" || leaf == "junk" || leaf.contains("spam") || leaf.contains("junk")
+        } ?: folders.firstOrNull { it.equals("Spam", ignoreCase = true) } ?: "Spam"
     }
 
     suspend fun disconnect() = withContext(Dispatchers.IO) {

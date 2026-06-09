@@ -52,4 +52,14 @@ internal class JavaImapClient(
         val conn = connection ?: return Result.failure(IllegalStateException("Not connected"))
         return conn.moveToArchive(folder, uid)
     }
+
+    override suspend fun moveToSpam(folder: String, uid: Long): Result<Unit> {
+        val conn = connection ?: return Result.failure(IllegalStateException("Not connected"))
+        return conn.moveToSpam(folder, uid)
+    }
+
+    override suspend fun moveToInbox(folder: String, uid: Long): Result<Unit> {
+        val conn = connection ?: return Result.failure(IllegalStateException("Not connected"))
+        return conn.moveToInbox(folder, uid)
+    }
 }

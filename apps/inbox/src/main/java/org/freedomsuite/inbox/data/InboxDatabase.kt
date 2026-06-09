@@ -7,7 +7,7 @@ import org.freedomsuite.core.storage.EncryptedRoom
 
 @Database(
     entities = [MailMessageEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class InboxDatabase : RoomDatabase() {

@@ -4,6 +4,9 @@ import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import org.freedomsuite.core.account.AccountStore
 import org.freedomsuite.core.account.EmailIdentity
+import org.freedomsuite.core.account.MailAccount
+import org.freedomsuite.core.account.discovery.MailServerDiscovery
+import org.freedomsuite.core.account.discovery.MailServerSettings
 import org.freedomsuite.core.calendarapi.CalendarBridge
 import org.freedomsuite.core.calendarapi.CalendarBridgeClient
 import org.freedomsuite.protocol.ical.IcalParser
@@ -14,12 +17,18 @@ import org.freedomsuite.protocol.imap.MailMessageSummary
 import org.freedomsuite.protocol.mime.MimeParser
 import org.freedomsuite.protocol.smtp.OutgoingMessage
 import org.freedomsuite.protocol.smtp.SmtpClientFactory
+import org.freedomsuite.inbox.spam.OwnedAddresses
+import org.freedomsuite.inbox.spam.SpamClassifier
+import org.freedomsuite.inbox.spam.SpamFolderNames
+import org.freedomsuite.inbox.spam.SpamInput
+import org.freedomsuite.inbox.spam.SpamVerdict
 
 class InboxRepository(context: Context) {
     private val appContext = context.applicationContext
     private val dao = InboxDatabase.getInstance(appContext).inboxDao()
     private val accountStore = AccountStore(appContext)
     private val calendarBridge = CalendarBridgeClient(appContext)
+    private val spamClassifier = SpamClassifier()
 
     fun hasAccount(): Boolean = accountStore.hasAccount()
 
@@ -30,21 +39,51 @@ class InboxRepository(context: Context) {
 
     fun isCalendarInstalled(): Boolean = calendarBridge.isCalendarInstalled()
 
-    suspend fun configureAccount(email: String, password: String): Result<Unit> {
-        val account = accountStore.createMailboxOrgAccount(email)
+    suspend fun configureAccount(
+        email: String,
+        password: String,
+        manualSettings: MailServerSettings? = null,
+    ): Result<Unit> {
+        val trimmedEmail = email.trim()
+        require(trimmedEmail.contains("@")) { "Invalid email address" }
+
         val passwordChars = password.toCharArray()
-        return runCatching {
-            val client = ImapClientFactory.create()
-            client.connect(account, passwordChars).getOrThrow()
-            client.disconnect()
-            accountStore.saveAccount(account, passwordChars)
+        val candidates = manualSettings?.let { listOf(it) }
+            ?: MailServerDiscovery(appContext).discover(trimmedEmail)
+
+        if (candidates.isEmpty()) {
+            return Result.failure(
+                IllegalStateException("Could not discover mail servers for this domain. Enter settings manually."),
+            )
         }
+
+        val errors = mutableListOf<String>()
+        for (settings in candidates) {
+            val account = accountStore.accountFromSettings(trimmedEmail, settings)
+            val client = imapClient(account)
+            val connectResult = runCatching {
+                client.connect(account, passwordChars).getOrThrow()
+                client.disconnect()
+            }
+            if (connectResult.isSuccess) {
+                accountStore.saveAccount(account, passwordChars)
+                return Result.success(Unit)
+            }
+            errors += "${settings.label} (${settings.imapHost}): ${connectResult.exceptionOrNull()?.message}"
+        }
+
+        return Result.failure(
+            IllegalStateException(
+                "Could not connect with discovered settings. Check email, app password, or enter server details manually.\n" +
+                    errors.take(3).joinToString("\n"),
+            ),
+        )
     }
 
     suspend fun listFolders(): Result<List<String>> {
         val account = accountStore.getAccount() ?: return Result.failure(IllegalStateException("No account"))
         val password = accountStore.getPassword() ?: return Result.failure(IllegalStateException("No password"))
-        val client = ImapClientFactory.create()
+        val client = imapClient(account)
         return runCatching {
             client.connect(account, password).getOrThrow()
             val folders = client.listFolders().getOrThrow()
@@ -56,12 +95,25 @@ class InboxRepository(context: Context) {
     suspend fun syncFolder(folder: String): Result<Int> {
         val account = accountStore.getAccount() ?: return Result.failure(IllegalStateException("No account"))
         val password = accountStore.getPassword() ?: return Result.failure(IllegalStateException("No password"))
-        val client = ImapClientFactory.create()
+        val client = imapClient(account)
         return runCatching {
             client.connect(account, password).getOrThrow()
             val summaries = client.fetchFolder(folder, limit = 50).getOrThrow()
-            val entities = summaries.map { summary ->
-                mapSummaryToEntity(client, folder, summary, fetchBodies = true)
+            val isInbox = folder.equals("INBOX", ignoreCase = true)
+            val entities = mutableListOf<MailMessageEntity>()
+            for (summary in summaries) {
+                val entity = mapSummaryToEntity(
+                    client = client,
+                    folder = folder,
+                    summary = summary,
+                    fetchBodies = true,
+                    account = account,
+                )
+                if (isInbox && entity.spamVerdict == SpamVerdict.SPAM.name) {
+                    client.moveToSpam(folder, entity.uid).getOrNull()
+                    continue
+                }
+                entities += entity
             }
             dao.clearFolder(folder)
             dao.upsertAll(entities)
@@ -75,12 +127,18 @@ class InboxRepository(context: Context) {
         val password = accountStore.getPassword() ?: return Result.failure(IllegalStateException("No password"))
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return Result.success(0)
-        val client = ImapClientFactory.create()
+        val client = imapClient(account)
         return runCatching {
             client.connect(account, password).getOrThrow()
             val summaries = client.searchFolder(folder, trimmed, limit = 50).getOrThrow()
             val entities = summaries.map { summary ->
-                mapSummaryToEntity(client, folder, summary, fetchBodies = false)
+                mapSummaryToEntity(
+                    client = client,
+                    folder = folder,
+                    summary = summary,
+                    fetchBodies = false,
+                    account = account,
+                )
             }
             dao.upsertAll(entities)
             client.disconnect()
@@ -96,7 +154,7 @@ class InboxRepository(context: Context) {
         }
         val account = accountStore.getAccount() ?: return cached
         val password = accountStore.getPassword() ?: return cached
-        val client = ImapClientFactory.create()
+        val client = imapClient(account)
         return runCatching {
             client.connect(account, password).getOrThrow()
             val summaries = client.fetchFolder(folder, limit = 200).getOrThrow()
@@ -105,12 +163,13 @@ class InboxRepository(context: Context) {
                 client.disconnect()
                 return@runCatching cached
             }
-            val entity = mapSummaryToEntity(
+                val entity = mapSummaryToEntity(
                 client = client,
                 folder = folder,
                 summary = summary,
                 fetchBodies = true,
                 existing = cached,
+                account = account,
             ).copy(isRead = true)
             client.disconnect()
             dao.upsert(entity)
@@ -124,6 +183,7 @@ class InboxRepository(context: Context) {
         summary: MailMessageSummary,
         fetchBodies: Boolean,
         existing: MailMessageEntity? = null,
+        account: MailAccount? = null,
     ): MailMessageEntity {
         val raw = if (fetchBodies) client.fetchRawMessage(folder, summary.uid).getOrDefault("") else ""
         val parsed = if (raw.isNotBlank()) MimeParser.parse(raw) else null
@@ -143,6 +203,14 @@ class InboxRepository(context: Context) {
             existing?.inviteStatus == InviteStatus.DECLINED.name -> InviteStatus.DECLINED.name
             else -> InviteStatus.PENDING.name
         }
+        val spam = classifySpam(
+            account = account ?: accountStore.getAccount(),
+            subject = summary.subject,
+            from = summary.from,
+            body = body,
+            headers = parsed?.headers.orEmpty(),
+            hasCalendarInvite = invite != null,
+        )
         return MailMessageEntity(
             folder = folder,
             uid = summary.uid,
@@ -160,6 +228,33 @@ class InboxRepository(context: Context) {
             inviteOrganizer = invite?.event?.organizer ?: summary.from,
             inviteRawIcs = invite?.rawIcs,
             inviteStatus = inviteStatus,
+            spamScore = spam?.score ?: existing?.spamScore ?: 0,
+            spamVerdict = spam?.verdict?.name ?: existing?.spamVerdict ?: SpamVerdict.HAM.name,
+            spamReasons = spam?.reasons ?: existing?.spamReasons.orEmpty(),
+        )
+    }
+
+    private fun classifySpam(
+        account: MailAccount?,
+        subject: String,
+        from: String,
+        body: String,
+        headers: Map<String, List<String>>,
+        hasCalendarInvite: Boolean,
+    ) = account?.let { mailAccount ->
+        spamClassifier.classify(
+            SpamInput(
+                subject = subject,
+                from = from,
+                body = body,
+                headers = headers,
+                owned = OwnedAddresses.fromAccount(
+                    mailAccount.email,
+                    mailAccount.aliases,
+                    mailAccount.ownedDomains,
+                ),
+                hasCalendarInvite = hasCalendarInvite,
+            ),
         )
     }
 
@@ -187,7 +282,7 @@ class InboxRepository(context: Context) {
             InviteResponseStatus.DECLINED -> "Declined"
             else -> "Updated"
         }
-        val smtp = SmtpClientFactory.create(account)
+        val smtp = smtpClient(account)
         smtp.send(
             OutgoingMessage(
                 from = identity,
@@ -231,10 +326,36 @@ class InboxRepository(context: Context) {
         return Result.success(Unit)
     }
 
+    suspend fun reportSpam(folder: String, uid: Long): Result<Unit> {
+        val account = accountStore.getAccount() ?: return Result.failure(IllegalStateException("No account"))
+        val password = accountStore.getPassword() ?: return Result.failure(IllegalStateException("No password"))
+        val client = imapClient(account)
+        return runCatching {
+            client.connect(account, password).getOrThrow()
+            client.moveToSpam(folder, uid).getOrThrow()
+            client.disconnect()
+            dao.deleteByFolderAndUid(folder, uid)
+        }
+    }
+
+    suspend fun markNotSpam(folder: String, uid: Long): Result<Unit> {
+        val account = accountStore.getAccount() ?: return Result.failure(IllegalStateException("No account"))
+        val password = accountStore.getPassword() ?: return Result.failure(IllegalStateException("No password"))
+        val client = imapClient(account)
+        return runCatching {
+            client.connect(account, password).getOrThrow()
+            client.moveToInbox(folder, uid).getOrThrow()
+            client.disconnect()
+            dao.deleteByFolderAndUid(folder, uid)
+        }
+    }
+
+    fun isSpamFolder(folder: String): Boolean = SpamFolderNames.isSpamFolder(folder)
+
     suspend fun archiveMessage(folder: String, uid: Long): Result<Unit> {
         val account = accountStore.getAccount() ?: return Result.failure(IllegalStateException("No account"))
         val password = accountStore.getPassword() ?: return Result.failure(IllegalStateException("No password"))
-        val client = ImapClientFactory.create()
+        val client = imapClient(account)
         return runCatching {
             client.connect(account, password).getOrThrow()
             client.moveToArchive(folder, uid).getOrThrow()
@@ -248,8 +369,7 @@ class InboxRepository(context: Context) {
         val password = accountStore.getPassword() ?: return Result.failure(IllegalStateException("No password"))
         val identity = account.identities.firstOrNull { it.isDefault }
             ?: EmailIdentity(account.email, "Primary", isDefault = true)
-        val client = SmtpClientFactory.create(account)
-        return client.send(
+        return smtpClient(account).send(
             OutgoingMessage(
                 from = identity,
                 to = listOf(to.trim()),
@@ -263,4 +383,10 @@ class InboxRepository(context: Context) {
     fun signOut() {
         accountStore.clearAccount()
     }
+
+    private fun imapClient(account: MailAccount) =
+        ImapClientFactory.create(plainText = account.plainText)
+
+    private fun smtpClient(account: MailAccount) =
+        SmtpClientFactory.create(account, plainText = account.plainText)
 }

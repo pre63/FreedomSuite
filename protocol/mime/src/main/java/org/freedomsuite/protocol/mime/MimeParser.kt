@@ -3,6 +3,7 @@ package org.freedomsuite.protocol.mime
 data class ParsedEmail(
     val plainBody: String,
     val calendarParts: List<String>,
+    val headers: Map<String, List<String>> = emptyMap(),
 )
 
 object MimeParser {
@@ -13,8 +14,47 @@ object MimeParser {
             return ParsedEmail(plainBody = normalized.trim(), calendarParts = emptyList())
         }
         val (headers, body) = split
-        val contentType = headerValue(headers, "Content-Type") ?: "text/plain"
-        return parsePart(headers, body, contentType)
+        val headerMap = parseHeaders(headers)
+        val contentType = headerValues(headerMap, "Content-Type").firstOrNull() ?: "text/plain"
+        val parsed = parsePart(headers, body, contentType)
+        return parsed.copy(headers = headerMap)
+    }
+
+    fun parseHeaders(headerBlock: String): Map<String, List<String>> {
+        val unfolded = unfoldHeaders(headerBlock.replace("\r\n", "\n"))
+        val result = linkedMapOf<String, MutableList<String>>()
+        for (line in unfolded.lineSequence()) {
+            val colon = line.indexOf(':')
+            if (colon <= 0) continue
+            val name = line.substring(0, colon).trim()
+            val value = line.substring(colon + 1).trim()
+            if (value.isEmpty()) continue
+            result.getOrPut(name) { mutableListOf() } += value
+        }
+        return result
+    }
+
+    fun headerValues(headers: Map<String, List<String>>, name: String): List<String> =
+        headers.entries
+            .firstOrNull { it.key.equals(name, ignoreCase = true) }
+            ?.value
+            .orEmpty()
+
+    private fun unfoldHeaders(block: String): String {
+        val lines = block.lines()
+        if (lines.isEmpty()) return block
+        val out = StringBuilder(lines.first())
+        for (i in 1 until lines.size) {
+            val line = lines[i]
+            if (line.startsWith(" ") || line.startsWith("\t")) {
+                out.append(' ')
+                out.append(line.trim())
+            } else {
+                out.append('\n')
+                out.append(line)
+            }
+        }
+        return out.toString()
     }
 
     private fun parsePart(headers: String, body: String, contentType: String): ParsedEmail {
@@ -64,15 +104,9 @@ object MimeParser {
         return raw.substring(0, index) to raw.substring(index + 2)
     }
 
-    private fun headerValue(headers: String, name: String): String? {
-        val pattern = Regex("""(?im)^${Regex.escape(name)}:\s*(.+)$""")
-        return headers.lineSequence()
-            .mapNotNull { line ->
-                val match = pattern.find(line) ?: return@mapNotNull null
-                match.groupValues[1].trim()
-            }
-            .firstOrNull()
-    }
+    private fun headerValue(headers: String, name: String): String? =
+        parseHeaders(headers)[name]?.firstOrNull()
+            ?: parseHeaders(headers).entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value?.firstOrNull()
 
     private fun parameter(contentType: String, key: String): String? {
         val pattern = Regex("""(?i)$key="?([^";]+)"?""")

@@ -12,6 +12,8 @@ interface ImapClient {
     suspend fun fetchMessageBody(folder: String, uid: Long): Result<String>
     suspend fun fetchRawMessage(folder: String, uid: Long): Result<String>
     suspend fun moveToArchive(folder: String, uid: Long): Result<Unit>
+    suspend fun moveToSpam(folder: String, uid: Long): Result<Unit>
+    suspend fun moveToInbox(folder: String, uid: Long): Result<Unit>
 
     suspend fun fetchInbox(limit: Int = 50): Result<List<MailMessageSummary>> =
         fetchFolder("INBOX", limit)

@@ -1,6 +1,7 @@
 package org.freedomsuite.inbox.data
 
 import androidx.room.Entity
+import org.freedomsuite.inbox.spam.SpamVerdict
 
 enum class InviteStatus {
     NONE,
@@ -31,4 +32,7 @@ data class MailMessageEntity(
     val inviteOrganizer: String? = null,
     val inviteRawIcs: String? = null,
     val inviteStatus: String = InviteStatus.NONE.name,
+    val spamScore: Int = 0,
+    val spamVerdict: String = SpamVerdict.HAM.name,
+    val spamReasons: String = "",
 )
