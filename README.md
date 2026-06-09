@@ -1,6 +1,6 @@
 # Freedom Suite
 
-Parasite-free Android applications for F-Droid. No tracking. No crash telemetry.
+Parasite-free Android applications for F-Droid and [GrapheneOS](docs/GRAPHENEOS.md). No tracking. No crash telemetry.
 All local data encrypted. Open protocols. Your servers, your keys.
 
 ## Applications
@@ -12,20 +12,26 @@ All local data encrypted. Open protocols. Your servers, your keys.
 | **Freedom Messages** | `org.freedomsuite.messages` | Channels · photos · Freedom Sync |
 | **Freedom Auth** | `org.freedomsuite.auth` | TOTP codes · encrypted backup |
 | **Freedom Files** | `org.freedomsuite.files` | Encrypted photos & files · Freedom Sync |
-| **Freedom Chat** | `org.freedomsuite.chat` | Placeholder |
+| **Freedom Camera** *(planned)* | `org.freedomsuite.camera` | Encrypted capture · on-device effects — see [docs/CAMERA-APP.md](docs/CAMERA-APP.md) |
+| **Freedom Chat** | `org.freedomsuite.chat` | On-device LLM + optional remote (Grok) — [docs/LLM-SERVICE.md](docs/LLM-SERVICE.md) |
 | **Freedom Keyboard** | `org.freedomsuite.keyboard` | Private IME · local predictions · on-device dictation |
 | **Freedom Search** | `org.freedomsuite.search` | Unified local search · mail · photos · calendar · messages |
 
 ## Build & publish
 
 ```bash
+make help                       # all developer commands
+make sim                        # start emulator + install all dev apps
+make dev-mail-server            # local IMAP/SMTP for Inbox testing — docs/DEV-MAIL-SERVER.md
+make install-dev                # install dev apps on connected device/emulator
+make build-dev                  # assemble devDebug APKs (logging enabled)
+make ci-verify                  # audits + tests + prod APKs
+
 ./scripts/github-setup.sh       # once: public GitHub repo + push main
 ./scripts/publish.sh            # prod APKs → GitHub Releases (automated)
-./scripts/publish.sh inbox      # single app
-./scripts/publish.sh --local    # build here, upload with gh (no CI wait)
-./scripts/ci-verify.sh          # local verify: audits + tests + prod APKs
-./gradlew assembleDevDebug      # dev builds with logging
 ```
+
+**Install on device/emulator:** apps use **product flavors** — run `make install-dev` or `./gradlew :apps:auth:installDevDebug` (not `installDebug`). Dev packages are `org.freedomsuite.*.dev`. For x86 emulators, copy `local.properties.example` → `local.properties` and set `freedom.includeEmulatorAbis=true`.
 
 CI verifies every push to `main`. Releases are APK files on GitHub — see [docs/GITHUB-RELEASES.md](docs/GITHUB-RELEASES.md). F-Droid metadata: [docs/FDROID-PIPELINE.md](docs/FDROID-PIPELINE.md).
 
@@ -49,7 +55,7 @@ FreedomSuite/
 - **Email/calendar**: mailbox.org via IMAP/SMTP/CalDAV
 - **Everything else**: Freedom Sync to encrypted blob storage (WebDAV or S3)
 
-See [docs/PRIVACY.md](docs/PRIVACY.md) and [docs/CRYPTO.md](docs/CRYPTO.md).
+See [docs/PRIVACY.md](docs/PRIVACY.md), [docs/CRYPTO.md](docs/CRYPTO.md), [docs/LLM-SERVICE.md](docs/LLM-SERVICE.md), [docs/SPAM-FILTER.md](docs/SPAM-FILTER.md), and [docs/MVP-AUDIT.md](docs/MVP-AUDIT.md) for deployment scope.
 
 ## License
 

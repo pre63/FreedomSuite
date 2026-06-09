@@ -1,5 +1,7 @@
 # Threat Model — Freedom Suite
 
+**Target platform:** [GrapheneOS](GRAPHENEOS.md) on supported Pixel hardware (primary). Also F-Droid on any arm64 Android device without Google Play Services.
+
 ## In scope
 
 | Threat | Mitigation |
