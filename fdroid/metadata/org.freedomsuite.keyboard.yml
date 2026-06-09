@@ -2,8 +2,8 @@ Categories:
   - System
 License: Apache-2.0
 AuthorName: Freedom Suite
-SourceCode: https://github.com/freedomsuite/FreedomSuite
-IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+SourceCode: https://github.com/pre63/FreedomSuite
+IssueTracker: https://github.com/pre63/FreedomSuite/issues
 
 AutoName: Freedom Keyboard
 Summary: Private keyboard — local predictions, no telemetry
@@ -13,7 +13,7 @@ Description: |-
   network permission. Optional on-device voice model can be added later.
 
 RepoType: git
-Repo: https://github.com/freedomsuite/FreedomSuite
+Repo: https://github.com/pre63/FreedomSuite
 
 Builds:
   - versionName: 0.1.0

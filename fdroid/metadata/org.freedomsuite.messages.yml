@@ -3,8 +3,8 @@ Categories:
   - Multimedia
 License: Apache-2.0
 AuthorName: Freedom Suite
-SourceCode: https://github.com/freedomsuite/FreedomSuite
-IssueTracker: https://github.com/freedomsuite/FreedomSuite/issues
+SourceCode: https://github.com/pre63/FreedomSuite
+IssueTracker: https://github.com/pre63/FreedomSuite/issues
 
 AutoName: Freedom Messages
 Summary: Encrypted channels with photos and Freedom Sync
@@ -14,7 +14,7 @@ Description: |-
   WebDAV or S3-compatible storage.
 
 RepoType: git
-Repo: https://github.com/freedomsuite/FreedomSuite
+Repo: https://github.com/pre63/FreedomSuite
 
 Builds:
   - versionName: 1.0.0
