@@ -34,8 +34,9 @@ Apps connect only to servers **you configure**:
 | Inbox | Your IMAP/SMTP provider (mailbox.org presets included) |
 | Calendar | Your CalDAV server (mailbox.org presets included) |
 | Messages / Sync | Optional: mailbox.org WebDAV, S3-compatible storage, or local-only |
-| Chat | API endpoint you configure (e.g. local Ollama) |
-| Messaging | Decentralized protocol network (TBD) |
+| Keyboard | **No network** — predictions and dictionary stay on device |
+| Search | **No network** — queries other Freedom apps via signed local bridge |
+| Chat | Placeholder — no network permission until implemented |
 
 We operate no central Freedom Suite server.
 

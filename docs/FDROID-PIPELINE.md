@@ -120,7 +120,7 @@ All mocks bind `127.0.0.1` — no real network.
 |-------|----------|-------|
 | `fdroidVerify` builds 7 release APKs (~15–25 min CI) | Medium | Acceptable; parallelize later with matrix job |
 | No code signing in CI | OK | F-Droid signs when building from source |
-| ONNX ~14 MB downloaded in CI | Medium | Cached via Gradle; Files prebuild on F-Droid |
+| ONNX ~18 MB (SFace INT8 + YOLO + OCR) in CI | Medium | `fetch-ml-models.sh` + `quantize-ml-models.sh`; see [ML-MODELS.md](ML-MODELS.md) |
 | Rust `freedom-sync-core` | OK | Pure Kotlin Android wrapper today — no cargo in CI |
 
 ## GitHub Actions secrets

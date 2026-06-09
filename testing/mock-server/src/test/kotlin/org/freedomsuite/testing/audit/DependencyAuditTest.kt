@@ -33,6 +33,17 @@ class DependencyAuditTest {
         Regex("""com\.google\.android\.play\.integrity"""),
         Regex("""androidx\.work:work-runtime"""),
         Regex("""com\.google\.mlkit"""),
+        Regex("""org\.acra"""),
+        Regex("""com\.newrelic"""),
+        Regex("""com\.instabug"""),
+        Regex("""com\.posthog"""),
+        Regex("""com\.appboy"""), // Braze
+        Regex("""com\.leanplum"""),
+        Regex("""com\.kochava"""),
+        Regex("""com\.android\.billingclient"""),
+        Regex("""androidx\.ads"""),
+        Regex("""com\.huawei\.hms"""),
+        Regex("""com\.countly"""),
     )
 
     private val scanFiles = listOf(
@@ -73,9 +84,12 @@ class DependencyAuditTest {
             Regex("""import\s+com\.google\.firebase"""),
             Regex("""import\s+io\.sentry"""),
             Regex("""import\s+com\.bugsnag"""),
+            Regex("""import\s+com\.google\.android\.gms"""),
             Regex("""FirebaseAnalytics"""),
             Regex("""Crashlytics"""),
             Regex("""Sentry\."""),
+            Regex("""AdvertisingIdClient"""),
+            Regex("""FirebaseInstallations"""),
         )
         val violations = mutableListOf<String>()
         scanDirs.forEach { dir ->

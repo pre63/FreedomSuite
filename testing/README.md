@@ -21,8 +21,9 @@ Freedom Suite integration tests use a **local mock mailbox.org** — no real net
 
 This runs:
 
-1. **JVM protocol smoke tests** (`:testing:mock-server:test`) — raw TCP/HTTP against mocks
-2. **Robolectric client tests** (`:testing:integration:testDevDebugUnitTest`) — IMAP, SMTP, CalDAV, Freedom Sync, TOTP, and end-to-end mailbox.org flow
+1. **Privacy audit tests** (`:testing:mock-server:test`) — banned SDKs, manifest permissions, network egress, encrypted storage
+2. **JVM protocol smoke tests** — raw TCP/HTTP against mocks
+3. **Robolectric client tests** (`:testing:integration:testDevDebugUnitTest`) — IMAP, SMTP, CalDAV, Freedom Sync, TOTP, and end-to-end mailbox.org flow
 
 ## What is mocked
 
