@@ -15,6 +15,17 @@ captures/
 # Rust
 /sync/freedom-sync-core/target/
 
+# LLM GenAI runtime + model (fetch via scripts)
+libs/onnxruntime-genai-android.aar
+vendor/llm-model/
+
+# ML tooling venv + conversion artifacts
+.venv-ml-quantize/
+core/ml/src/main/assets/models/*.fp32.bak
+core/ml/src/main/assets/models/*.quant.tmp
+core/ml/src/main/assets/models/*.fp16.tmp
+core/ml/src/main/assets/models/*.simp.onnx
+
 # Secrets
 *.keystore
 .env
