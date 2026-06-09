@@ -18,7 +18,7 @@ class MockHttpServer {
     val baseUrl: String get() = "http://localhost:$port"
 
     fun start(port: Int = 0) {
-        val http = HttpServer.create(InetSocketAddress("localhost", port), 0)
+        val http = HttpServer.create(InetSocketAddress(port), 0)
         http.createContext("/") { exchange -> handle(exchange) }
         http.executor = Executors.newCachedThreadPool()
         http.start()

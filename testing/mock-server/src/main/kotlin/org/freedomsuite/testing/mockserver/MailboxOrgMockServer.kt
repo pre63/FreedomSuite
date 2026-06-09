@@ -1,21 +1,25 @@
 package org.freedomsuite.testing.mockserver
 
 /**
- * Local stand-in for mailbox.org IMAP, SMTP, CalDAV, WebDAV, and S3-compatible sync.
- * Binds ephemeral ports on 127.0.0.1 using plain TCP/HTTP for integration tests.
+ * Local stand-in for IMAP, SMTP, CalDAV, WebDAV, and S3-compatible sync.
+ * Uses plain TCP/HTTP (no TLS). Ephemeral ports by default; fixed ports for [DevMailServer].
  */
-class MailboxOrgMockServer {
+class MailboxOrgMockServer(
+    val email: String = DevMailDefaults.EMAIL,
+    val password: String = DevMailDefaults.PASSWORD,
+) {
     val imap = MockImapServer()
     val smtp = MockSmtpServer()
     val http = MockHttpServer()
 
-    val email: String = "test@mailbox.org"
-    val password: String = "test-app-password"
-
-    fun start() {
-        imap.start()
-        smtp.start()
-        http.start()
+    fun start(
+        imapPort: Int = 0,
+        smtpPort: Int = 0,
+        httpPort: Int = 0,
+    ) {
+        imap.start(imapPort)
+        smtp.start(smtpPort)
+        http.start(httpPort)
         Thread.sleep(50)
     }
 

@@ -1,5 +1,10 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    application
+}
+
+application {
+    mainClass.set("org.freedomsuite.testing.mockserver.DevMailServerMainKt")
 }
 
 java {

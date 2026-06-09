@@ -32,6 +32,7 @@ class MockImapServer(
     val port: Int get() = serverSocket?.localPort ?: error("Server not started")
 
     val archivedUids: MutableSet<Long> = mutableSetOf()
+    val spamUids: MutableSet<Long> = mutableSetOf()
 
     fun start(port: Int = 0) {
         check(!running.get()) { "Already started" }
@@ -81,6 +82,7 @@ class MockImapServer(
                         upper.contains(" LIST ") -> {
                             writeLine(writer, """* LIST (\HasNoChildren) "/" "INBOX"""")
                             writeLine(writer, """* LIST (\Archive) "/" "Archive"""")
+                            writeLine(writer, """* LIST (\Junk) "/" "Spam"""")
                             writeLine(writer, """* LIST (\Sent) "/" "Sent"""")
                             writeLine(writer, "$tag OK LIST completed")
                         }
@@ -139,7 +141,22 @@ class MockImapServer(
                         upper.contains(" UID MOVE ") -> {
                             val parts = line.split(' ')
                             val uid = parts[parts.indexOf("MOVE") + 1].toLong()
-                            archivedUids += uid
+                            val destination = line.substringAfter("MOVE $uid ").trim().trim('"')
+                            when {
+                                destination.equals("Archive", ignoreCase = true) -> {
+                                    archivedUids += uid
+                                    spamUids -= uid
+                                }
+                                destination.equals("Spam", ignoreCase = true) ||
+                                    destination.equals("Junk", ignoreCase = true) -> {
+                                    spamUids += uid
+                                    archivedUids -= uid
+                                }
+                                destination.equals("INBOX", ignoreCase = true) -> {
+                                    spamUids -= uid
+                                    archivedUids -= uid
+                                }
+                            }
                             writeLine(writer, "$tag OK MOVE completed")
                         }
                         upper.contains(" LOGOUT") -> {
@@ -157,10 +174,12 @@ class MockImapServer(
     private fun activeMessages(folder: String): List<MockMailMessage> = when {
         folder.equals("Archive", ignoreCase = true) ->
             messages.filter { it.uid in archivedUids }
+        folder.equals("Spam", ignoreCase = true) || folder.equals("Junk", ignoreCase = true) ->
+            messages.filter { it.uid in spamUids }
         folder.equals("Sent", ignoreCase = true) ->
             sentMessages
         else ->
-            messages.filter { it.uid !in archivedUids }
+            messages.filter { it.uid !in archivedUids && it.uid !in spamUids }
     }
 
     private fun extractQuotedSearch(line: String): String {
