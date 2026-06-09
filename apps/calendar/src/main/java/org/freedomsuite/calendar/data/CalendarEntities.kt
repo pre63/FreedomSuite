@@ -37,4 +37,7 @@ data class EventEntity(
     val organizer: String?,
     val sourceMailUid: Long?,
     val rawInviteIcs: String?,
+    val isAllDay: Boolean = false,
+    /** Minutes before start to fire a local notification; null = no reminder. */
+    val reminderMinutesBefore: Int? = null,
 )
