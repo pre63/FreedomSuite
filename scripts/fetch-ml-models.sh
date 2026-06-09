@@ -13,11 +13,12 @@ fetch() {
   curl -fsSL "$url" -o "$DEST/$out"
 }
 
-fetch "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx" "yunet.onnx"
+fetch "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2026may.onnx" "yunet.onnx"
+fetch "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec_int8.onnx" "sface.onnx"
 fetch "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n.onnx" "yolov5n.onnx"
 fetch "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/onnx/PP-OCRv4/det/en_PP-OCRv3_det_mobile.onnx" "ocr_det.onnx"
 fetch "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/onnx/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.onnx" "ocr_rec.onnx"
-fetch "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/release/2.6/ppocr/utils/dict/en_dict.txt" "en_dict.txt"
+fetch "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt" "en_dict.txt"
 
 if [[ ! -f "$DEST/coco_labels.txt" ]]; then
   cat > "$DEST/coco_labels.txt" <<'EOF'
@@ -34,3 +35,9 @@ EOF
 fi
 
 ls -lh "$DEST"/*.onnx "$DEST"/en_dict.txt
+
+echo "→ quantizing models (YuNet + OCR FP16)"
+"$ROOT/scripts/quantize-ml-models.sh"
+
+echo "→ writing MODELS-MANIFEST.json"
+"$ROOT/scripts/generate-models-manifest.sh"

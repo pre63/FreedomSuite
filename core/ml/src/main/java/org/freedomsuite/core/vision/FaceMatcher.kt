@@ -1,7 +1,8 @@
 package org.freedomsuite.core.vision
 
 object FaceMatcher {
-    private const val SIMILARITY_THRESHOLD = 0.82f
+    /** SFace (OpenCV Zoo) default cosine match threshold is ~0.363. */
+    private const val SIMILARITY_THRESHOLD = 0.36f
 
     fun findSimilar(
         sourceEmbeddings: List<FloatArray>,

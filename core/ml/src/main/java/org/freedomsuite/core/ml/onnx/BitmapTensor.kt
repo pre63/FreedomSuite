@@ -36,6 +36,43 @@ internal object BitmapTensor {
         return data
     }
 
+    fun toNchwFloat16(
+        bitmap: Bitmap,
+        width: Int,
+        height: Int,
+        mean: FloatArray = floatArrayOf(0f, 0f, 0f),
+        std: FloatArray = floatArrayOf(1f, 1f, 1f),
+        scale: Float = 1f / 255f,
+        swapRb: Boolean = true,
+    ): ShortArray {
+        val floats = toNchwFloat(bitmap, width, height, mean, std, scale, swapRb)
+        return ShortArray(floats.size) { idx -> floatToHalf(floats[idx]) }
+    }
+
+    private fun floatToHalf(value: Float): Short {
+        val bits = java.lang.Float.floatToIntBits(value)
+        val sign = (bits ushr 16) and 0x8000
+        var mantissa = bits and 0x007FFFFF
+        var exp = (bits ushr 23) and 0xFF
+        if (exp == 0xFF) {
+            return (sign or 0x7C00 or (if (mantissa != 0) 0x0200 else 0)).toShort()
+        }
+        if (exp == 0) {
+            return sign.toShort()
+        }
+        exp = exp - 127 + 15
+        if (exp >= 0x1F) {
+            return (sign or 0x7C00).toShort()
+        }
+        if (exp <= 0) {
+            mantissa = mantissa or 0x00800000
+            val shift = 1 - exp
+            mantissa = mantissa ushr (shift + 13)
+            return (sign or mantissa).toShort()
+        }
+        return (sign or (exp shl 10) or (mantissa ushr 13)).toShort()
+    }
+
     fun resizeKeepAspect(
         bitmap: Bitmap,
         limitSideLen: Int,

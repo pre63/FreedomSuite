@@ -1,10 +1,12 @@
 package org.freedomsuite.core.ml.onnx
 
+import ai.onnxruntime.OnnxJavaType
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import java.nio.FloatBuffer
+import java.nio.ShortBuffer
 
 internal class OnnxModel(
     context: Context,
@@ -38,6 +40,9 @@ internal class OnnxModel(
 
     fun createInput(shape: LongArray, data: FloatArray): OnnxTensor =
         OnnxTensor.createTensor(env, FloatBuffer.wrap(data), shape)
+
+    fun createInputFloat16(shape: LongArray, data: ShortArray): OnnxTensor =
+        OnnxTensor.createTensor(env, ShortBuffer.wrap(data), shape, OnnxJavaType.FLOAT16)
 
     override fun close() {
         session.close()

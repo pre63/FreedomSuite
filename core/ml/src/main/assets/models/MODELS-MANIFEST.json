@@ -1,0 +1,55 @@
+{
+  "bundle_version": "2026-06-08",
+  "total_onnx_bytes": 19160343,
+  "files": [
+    {
+      "name": "yunet.onnx",
+      "bytes": 130364,
+      "sha256": "e03d93203e9493aa8469985131ba1515b5a688f44f1dbba8160753caaecabece",
+      "upstream": "opencv/opencv_zoo face_detection_yunet_2026may (MIT)",
+      "role": "face_detection"
+    },
+    {
+      "name": "sface.onnx",
+      "bytes": 9896933,
+      "sha256": "2b0e941e6f16cc048c20aee0c8e31f569118f65d702914540f7bfdc14048d78a",
+      "upstream": "opencv/opencv_zoo face_recognition_sface_2021dec_int8 (Apache-2.0)",
+      "role": "face_embedding"
+    },
+    {
+      "name": "yolov5n.onnx",
+      "bytes": 3981910,
+      "sha256": "04f0e55c26f58d17145b36045780fe1250d5bd2187543e11568e5141d05b3262",
+      "upstream": "ultralytics/yolov5 v7.0 yolov5n.onnx (GPL-3.0 weights)",
+      "role": "object_detection"
+    },
+    {
+      "name": "ocr_det.onnx",
+      "bytes": 1266300,
+      "sha256": "6a08630cb7ef2d44e86ed5d101a4c0d6b9983d9b7d36ad85251a7f5b93f5e3f0",
+      "upstream": "RapidAI/RapidOCR PP-OCRv4 en det (Apache-2.0)",
+      "role": "ocr_detect"
+    },
+    {
+      "name": "ocr_rec.onnx",
+      "bytes": 3884836,
+      "sha256": "3e62b6c77ac4adfc4dbcae8acb20d394868b843b3610ce97aaa563f5284d3aa4",
+      "upstream": "RapidAI/RapidOCR PP-OCRv4 en rec (Apache-2.0)",
+      "role": "ocr_recognize"
+    },
+    {
+      "name": "en_dict.txt",
+      "bytes": 190,
+      "sha256": "5662df9d2d03f0e8ca0d3b0649d6acbab904b6a14b3d3521463c71c37c668ce3",
+      "upstream": "RapidAI/RapidOCR PP-OCRv4 en dict (Apache-2.0)",
+      "role": "ocr_dict"
+    },
+    {
+      "name": "coco_labels.txt",
+      "bytes": 665,
+      "sha256": "c7e79c855f73cbba9f33d649d60e1676eb0a974021a41696d1ac0d4b7f7e0211",
+      "upstream": "bundled COCO label list",
+      "role": "object_labels"
+    }
+  ]
+}

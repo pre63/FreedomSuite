@@ -15,6 +15,8 @@ object LocalVisionEngine {
     private var objectDetector: Yolov5ObjectDetector? = null
     @Volatile
     private var faceDetector: YuNetFaceDetector? = null
+    @Volatile
+    private var faceEmbedder: SFaceEmbedder? = null
 
     suspend fun indexImage(
         context: Context,
@@ -28,6 +30,7 @@ object LocalVisionEngine {
             try {
                 val objects = objectDetector!!.detect(bitmap)
                 val faceBoxes = faceDetector!!.detect(bitmap)
+                val embedder = faceEmbedder!!
                 val faces = faceBoxes.map { face ->
                     DetectedFace(
                         left = face.box.left,
@@ -35,7 +38,7 @@ object LocalVisionEngine {
                         right = face.box.right,
                         bottom = face.box.bottom,
                         score = face.score,
-                        embedding = FaceEmbedder.embed(bitmap, face.box, face.landmarks),
+                        embedding = embedder.embed(bitmap, face),
                     )
                 }
                 val ocrText = if (includeOcr) {
@@ -57,10 +60,11 @@ object LocalVisionEngine {
     }
 
     private suspend fun ensureEngines(context: Context) {
-        if (objectDetector != null && faceDetector != null) return
+        if (objectDetector != null && faceDetector != null && faceEmbedder != null) return
         initMutex.withLock {
             if (objectDetector == null) objectDetector = Yolov5ObjectDetector(context)
             if (faceDetector == null) faceDetector = YuNetFaceDetector(context)
+            if (faceEmbedder == null) faceEmbedder = SFaceEmbedder(context)
         }
     }
 

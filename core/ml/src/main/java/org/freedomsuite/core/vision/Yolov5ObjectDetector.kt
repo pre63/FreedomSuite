@@ -17,8 +17,11 @@ internal class Yolov5ObjectDetector(context: Context) : AutoCloseable {
     }
 
     fun detect(bitmap: Bitmap): List<DetectedObject> {
-        val tensor = BitmapTensor.toNchwFloat(bitmap, inputSize, inputSize, swapRb = false)
-        val input = model.createInput(longArrayOf(1, 3, inputSize.toLong(), inputSize.toLong()), tensor)
+        val tensor = BitmapTensor.toNchwFloat16(bitmap, inputSize, inputSize, swapRb = false)
+        val input = model.createInputFloat16(
+            longArrayOf(1, 3, inputSize.toLong(), inputSize.toLong()),
+            tensor,
+        )
         val output = model.runFirstOutput(input) as Array<Array<FloatArray>>
         input.close()
         return parse(output[0])
