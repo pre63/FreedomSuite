@@ -15,7 +15,7 @@
 | Keyboard | OpenBoard, FlorisBoard | Gboard |
 | Chat | Ollama / local LLM apps | ChatGPT app |
 
-**Audit date:** 2026-06-07 · **Method:** source review of all `apps/*`, `core/ml`, cross-app bridges.
+**Audit date:** 2026-06-07 · **Updated:** 2026-06-08 (P0 MVP complete for GitHub Release) · **Method:** source review of all `apps/*`, `core/ml`, cross-app bridges.
 
 ---
 
@@ -23,10 +23,10 @@
 
 | Verdict | Detail |
 |---------|--------|
-| **Shippable today?** | **Auth + Keyboard (basic) + Files (import vault)** — yes with caveats |
-| **Not shippable as advertised** | Inbox (thin mail), Calendar (no edit/time), Messages (“group” is fake), Search (open hit broken), Chat (stub) |
-| **Suite-wide P0 hole** | Unified search launches app home; extras ignored in every target app |
-| **CRUD holes** | Calendar **edit**, Files **folder delete/rename**, Messages **channel delete**, Inbox **sign-out** |
+| **Shippable today?** | **7-app GitHub Release bundle** — Auth, Inbox, Calendar, Files, Messages, Search, Keyboard |
+| **Not in release bundle** | Chat (dev/GitHub + model push), Camera (planned) |
+| **Suite-wide P0** | ✅ Search deep links wired in all target apps |
+| **CRUD holes closed** | Calendar edit + date/time pickers; Files folder delete + export + backup index; Messages channel delete; Inbox sign-out + reply |
 | **ML underused** | Strong indexing in Files; zero ML in Inbox/Calendar/Search UI; Chat digests vision but has no local LLM |
 
 **Recommended MVP:** 7 F-Droid apps with **one cross-app fix** (search deep links) + **per-app P0 table below**. Defer Chat, Camera, video, real-time messaging, CalDAV.
@@ -38,11 +38,11 @@
 | App | Core loop works? | CRUD complete? | ML used well? | MVP ready? |
 |-----|------------------|----------------|--------------|------------|
 | **Auth** | ✅ TOTP + backup | C/R/D — no edit | N/A | ✅ Yes |
-| **Files** | ✅ import/encrypt/search | Missing rename, folder delete UI | ✅ Strong | ⚠️ After P0 fixes |
-| **Inbox** | ⚠️ thin | Archive only; no sign-out UI | ❌ None | ⚠️ After P0 |
-| **Calendar** | ⚠️ list only | **No edit**; delete ✅ | ❌ None | ❌ Needs P0 |
-| **Messages** | ✅ personal notes | No channel/msg delete UI | ❌ None | ⚠️ Rename positioning |
-| **Search** | ✅ query works | N/A | ⚠️ Indirect only | ❌ openHit broken |
+| **Files** | ✅ import/encrypt/search | Folder delete + export; backup includes ML index | ✅ Strong | ✅ Yes |
+| **Inbox** | ✅ IMAP + spam filter | Reply, sign-out, settings | ❌ None | ✅ Yes |
+| **Calendar** | ✅ list + edit | Edit + date/time pickers | ❌ None | ✅ Yes |
+| **Messages** | ✅ encrypted notes | Channel delete UI | ❌ None | ✅ Yes (honest copy) |
+| **Search** | ✅ query + openHit | N/A | ⚠️ Indirect only | ✅ Yes |
 | **Keyboard** | ✅ type + suggest | No clear-learned-words | ❌ ASR stub | ⚠️ Shift/layers P1 |
 | **Chat** | ⚠️ LLM service wired | No persist yet | ✅ On-device GenAI + vision | ⚠️ Needs model push |
 

@@ -31,12 +31,12 @@ Apps connect only to servers **you configure**:
 
 | App | Default servers |
 |-----|-----------------|
-| Inbox | Your IMAP/SMTP provider (mailbox.org presets included) |
-| Calendar | Your CalDAV server (mailbox.org presets included) |
-| Messages / Sync | Optional: mailbox.org WebDAV, S3-compatible storage, or local-only |
+| Inbox | Your IMAP/SMTP provider (you configure; optional dev mock server for testing) |
+| Calendar | **No network** — events stored locally on device |
+| Messages / Sync | Optional: WebDAV, S3-compatible storage, or local-only |
 | Keyboard | **No network** — predictions and dictionary stay on device |
 | Search | **No network** — queries other Freedom apps via signed local bridge |
-| Chat | Placeholder — no network permission until implemented |
+| Chat | Optional remote LLM endpoint you configure; on-device model has no network |
 
 We operate no central Freedom Suite server.
 
