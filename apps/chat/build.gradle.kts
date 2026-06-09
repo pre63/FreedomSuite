@@ -15,3 +15,11 @@ android {
         jvmTarget = "17"
     }
 }
+
+dependencies {
+    implementation(project(":core:llm"))
+    implementation(project(":core:ml"))
+    implementation(project(":core:keyboard"))
+    implementation(project(":core:crypto"))
+    implementation(libs.okhttp)
+}

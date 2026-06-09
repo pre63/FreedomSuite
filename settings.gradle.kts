@@ -28,6 +28,7 @@ include(":core:account")
 include(":core:privacy")
 include(":core:totp")
 include(":core:ml")
+include(":core:llm")
 include(":core:keyboard")
 include(":core:search-api")
 
