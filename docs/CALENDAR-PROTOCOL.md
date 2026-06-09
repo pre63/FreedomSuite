@@ -43,17 +43,50 @@ sequenceDiagram
 | Maybe | `METHOD:REPLY`, `PARTSTAT=TENTATIVE` | Event added (tentative) |
 | Decline | `METHOD:REPLY`, `PARTSTAT=DECLINED` | Not added |
 
-## Freedom Sync snapshot (v1)
+## Agenda UI
+
+Events are grouped by day in the list screen:
+
+| Header | When |
+|--------|------|
+| **Today** | Start falls on the current local day |
+| **Tomorrow** | Start falls on the next local day |
+| Full date | All other upcoming/past days |
+
+**Upcoming** shows events whose end is still in the future; **Past** shows ended events. All-day events display as `All day · <date>`.
+
+## Local reminders
+
+Reminders are **on-device only** — no push server, no CalDAV alarms.
+
+| Piece | Role |
+|-------|------|
+| `EventReminderScheduler` | `AlarmManager.setExactAndAllowWhileIdle` per event |
+| `EventReminderReceiver` | Fires notification via `EventNotifier` |
+| `ReminderBootReceiver` | Re-schedules alarms after reboot |
+| `CalendarApplication` | Re-schedules on cold start |
+
+**Permissions:** `POST_NOTIFICATIONS` (Android 13+), `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`.
+
+**Defaults:** New local events default to **15 minutes before**. Email invites accepted from Inbox get the same default unless changed on edit.
+
+**Choices:** None, at event time, 5 / 15 / 30 min, 1 hour, 1 day before.
+
+Tapping a reminder notification opens the event detail screen.
+
+## Freedom Sync snapshot (v2)
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "calendars": [{ "id": "local:personal", "displayName": "Personal" }],
   "events": [{
     "uid": "...",
     "title": "...",
     "startEpochMs": 0,
     "endEpochMs": 0,
+    "isAllDay": false,
+    "reminderMinutesBefore": 15,
     "source": "EMAIL",
     "responseStatus": "ACCEPTED",
     "sourceMailUid": 42,

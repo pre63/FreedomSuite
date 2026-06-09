@@ -40,7 +40,7 @@
 | **Auth** | ✅ TOTP + backup | C/R/D — no edit | N/A | ✅ Yes |
 | **Files** | ✅ import/encrypt/search | Folder delete + export; backup includes ML index | ✅ Strong | ✅ Yes |
 | **Inbox** | ✅ IMAP + spam filter | Reply, sign-out, settings | ❌ None | ✅ Yes |
-| **Calendar** | ✅ list + edit | Edit + date/time pickers | ❌ None | ✅ Yes |
+| **Calendar** | ✅ agenda + reminders | Create/edit with dates, all-day, reminders | ❌ None | ✅ Yes |
 | **Messages** | ✅ encrypted notes | Channel delete UI | ❌ None | ✅ Yes (honest copy) |
 | **Search** | ✅ query + openHit | N/A | ⚠️ Indirect only | ✅ Yes |
 | **Keyboard** | ✅ type + suggest | No clear-learned-words | ❌ ASR stub | ⚠️ Shift/layers P1 |
@@ -54,10 +54,11 @@
 
 | Operation | Status | Gap |
 |-----------|--------|-----|
-| Create | ✅ | **No date/time picker** — hardcoded now+1h |
-| Read | ✅ | Flat list only |
-| **Update** | ❌ | **Cannot edit title, time, location** |
+| Create | ✅ | Date/time pickers, all-day, reminder chips |
+| Read | ✅ | Agenda grouped by Today/Tomorrow/date; Upcoming/Past filter |
+| Update | ✅ | Edit screen with same fields as create |
 | Delete | ✅ | Detail screen delete button |
+| Reminders | ✅ | Local notifications via AlarmManager; re-scheduled on boot |
 
 ### Files — folders & files
 
