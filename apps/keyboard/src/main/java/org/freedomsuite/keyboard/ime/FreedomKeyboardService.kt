@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -26,6 +27,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.freedomsuite.core.keyboard.SuggestionEngine
 import org.freedomsuite.core.keyboard.speech.StubSpeechRecognizer
+import org.freedomsuite.core.ui.FreedomTheme
 import org.freedomsuite.keyboard.data.KeyboardRepository
 
 class FreedomKeyboardService :
@@ -61,26 +63,45 @@ class FreedomKeyboardService :
     }
 
     override fun onCreateInputView(): View {
-        lifecycleRegistry.currentState = Lifecycle.State.STARTED
         return ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@FreedomKeyboardService)
-            setViewTreeViewModelStoreOwner(this@FreedomKeyboardService)
-            setViewTreeSavedStateRegistryOwner(this@FreedomKeyboardService)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            addOnAttachStateChangeListener(
+                object : View.OnAttachStateChangeListener {
+                    override fun onViewAttachedToWindow(v: View) {
+                        bindComposeOwners(v)
+                    }
+
+                    override fun onViewDetachedFromWindow(v: View) = Unit
+                },
+            )
             setContent {
-                KeyboardScreen(
-                    partialWord = partialWord,
-                    suggestions = suggestions,
-                    shiftEnabled = shiftEnabled,
-                    isListening = isListening,
-                    onSuggestion = { applySuggestion(it) },
-                    onKey = { handleKey(it) },
-                    onDelete = { handleDelete() },
-                    onSpace = { handleSpace() },
-                    onEnter = { handleEnter() },
-                    onMic = { toggleDictation() },
-                )
+                FreedomTheme {
+                    KeyboardScreen(
+                        partialWord = partialWord,
+                        suggestions = suggestions,
+                        shiftEnabled = shiftEnabled,
+                        isListening = isListening,
+                        onSuggestion = { applySuggestion(it) },
+                        onKey = { handleKey(it) },
+                        onDelete = { handleDelete() },
+                        onSpace = { handleSpace() },
+                        onEnter = { handleEnter() },
+                        onMic = { toggleDictation() },
+                    )
+                }
             }
         }
+    }
+
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+        super.onStartInputView(info, restarting)
+        lifecycleRegistry.currentState = Lifecycle.State.RESUMED
+        window?.window?.decorView?.let { bindComposeOwners(it) }
+    }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
+        super.onFinishInputView(finishingInput)
     }
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
@@ -186,5 +207,15 @@ class FreedomKeyboardService :
 
     private fun vibrate() {
         window?.window?.decorView?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+    }
+
+    private fun bindComposeOwners(root: View) {
+        var view: View? = root
+        while (view != null) {
+            view.setViewTreeLifecycleOwner(this)
+            view.setViewTreeViewModelStoreOwner(this)
+            view.setViewTreeSavedStateRegistryOwner(this)
+            view = view.parent as? View
+        }
     }
 }
