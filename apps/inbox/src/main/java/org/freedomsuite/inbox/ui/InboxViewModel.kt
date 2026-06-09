@@ -16,9 +16,22 @@ import org.freedomsuite.core.account.discovery.DevMailServer
 import org.freedomsuite.core.account.discovery.DiscoverySource
 import org.freedomsuite.core.account.discovery.MailServerSettings
 import org.freedomsuite.core.ui.ManualMailSettings
+import org.freedomsuite.core.account.MailAccount
 import org.freedomsuite.inbox.data.InboxRepository
 import org.freedomsuite.inbox.data.MailMessageEntity
 import org.freedomsuite.protocol.ical.InviteResponseStatus
+
+data class ComposeDraft(
+    val to: String = "",
+    val subject: String = "",
+    val body: String = "",
+)
+
+data class AccountInfo(
+    val email: String,
+    val aliases: List<String>,
+    val ownedDomains: List<String>,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class InboxViewModel(application: Application) : AndroidViewModel(application) {
@@ -61,6 +74,12 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
     private val _calendarInstalled = MutableStateFlow(repository.isCalendarInstalled())
     val calendarInstalled: StateFlow<Boolean> = _calendarInstalled.asStateFlow()
 
+    private val _accountInfo = MutableStateFlow(repository.getAccount()?.toAccountInfo())
+    val accountInfo: StateFlow<AccountInfo?> = _accountInfo.asStateFlow()
+
+    private val _composeDraft = MutableStateFlow<ComposeDraft?>(null)
+    val composeDraft: StateFlow<ComposeDraft?> = _composeDraft.asStateFlow()
+
     init {
         if (_hasAccount.value) {
             loadFolders()
@@ -77,6 +96,7 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
             repository.configureAccount(email, password, manualSettings)
                 .onSuccess {
                     _hasAccount.value = true
+                    _accountInfo.value = repository.getAccount()?.toAccountInfo()
                     loadFolders()
                     refresh()
                 }
@@ -145,9 +165,13 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun openMessage(uid: Long) {
+    fun openMessage(uid: Long, folder: String? = null) {
+        val targetFolder = folder ?: _currentFolder.value
+        if (folder != null && folder != _currentFolder.value) {
+            _currentFolder.value = folder
+        }
         viewModelScope.launch {
-            _activeMessage.value = repository.getMessage(_currentFolder.value, uid)
+            _activeMessage.value = repository.getMessage(targetFolder, uid)
         }
     }
 
@@ -179,14 +203,50 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
 
     fun isSpamFolder(folder: String): Boolean = repository.isSpamFolder(folder)
 
+    fun startReply(message: MailMessageEntity) {
+        val to = extractReplyAddress(message.from)
+        val subject = if (message.subject.startsWith("Re:", ignoreCase = true)) {
+            message.subject
+        } else {
+            "Re: ${message.subject}"
+        }
+        val quoted = message.body.ifBlank { message.snippet }
+        _composeDraft.value = ComposeDraft(
+            to = to,
+            subject = subject,
+            body = "\n\n---\n${message.from} wrote:\n$quoted",
+        )
+    }
+
+    fun clearComposeDraft() {
+        _composeDraft.value = null
+    }
+
     fun sendMessage(to: String, subject: String, body: String, onSent: () -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             repository.sendMessage(to, subject, body)
-                .onSuccess { onSent() }
+                .onSuccess {
+                    _composeDraft.value = null
+                    onSent()
+                }
                 .onFailure { _error.value = it.message ?: "Send failed" }
             _isLoading.value = false
         }
+    }
+
+    fun saveMailboxExtras(aliases: List<String>, ownedDomains: List<String>) {
+        repository.saveMailboxExtras(aliases, ownedDomains)
+        _accountInfo.value = repository.getAccount()?.toAccountInfo()
+    }
+
+    fun signOut() {
+        repository.signOut()
+        _hasAccount.value = false
+        _accountInfo.value = null
+        _folders.value = listOf(DEFAULT_FOLDER)
+        _currentFolder.value = DEFAULT_FOLDER
+        _activeMessage.value = null
     }
 
     fun respondToInvite(response: InviteResponseStatus) {
@@ -205,6 +265,17 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearError() {
         _error.value = null
+    }
+
+    private fun MailAccount.toAccountInfo() = AccountInfo(
+        email = email,
+        aliases = aliases,
+        ownedDomains = ownedDomains,
+    )
+
+    private fun extractReplyAddress(from: String): String {
+        val angle = Regex("""<([^>]+)>""").find(from)?.groupValues?.get(1)
+        return angle ?: from.trim()
     }
 
     companion object {

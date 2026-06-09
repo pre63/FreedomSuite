@@ -57,6 +57,18 @@ class AccountStore(context: Context) {
         prefs.remove(KEY_PASSWORD)
     }
 
+    fun updateMailboxExtras(aliases: List<String>, ownedDomains: List<String>) {
+        val account = getAccount() ?: return
+        saveAccount(
+            account.copy(
+                aliases = aliases,
+                ownedDomains = ownedDomains,
+                identities = buildIdentities(account.email, aliases.joinToString(ALIAS_DELIMITER)),
+            ),
+            getPassword() ?: return,
+        )
+    }
+
     fun accountFromSettings(email: String, settings: MailServerSettings): MailAccount =
         settings.toMailAccount(email).copy(
             ownedDomains = listOfNotNull(

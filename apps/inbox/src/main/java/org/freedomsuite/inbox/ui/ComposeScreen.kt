@@ -31,16 +31,17 @@ fun ComposeScreen(
     onBack: () -> Unit,
     onSent: () -> Unit,
 ) {
-    var to by remember { mutableStateOf("") }
-    var subject by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
+    val draft by viewModel.composeDraft.collectAsState()
+    var to by remember(draft) { mutableStateOf(draft?.to.orEmpty()) }
+    var subject by remember(draft) { mutableStateOf(draft?.subject.orEmpty()) }
+    var body by remember(draft) { mutableStateOf(draft?.body.orEmpty()) }
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Compose") },
+                title = { Text(if (draft != null) "Reply" else "Compose") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

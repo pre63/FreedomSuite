@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +39,7 @@ fun MessageDetailScreen(
     viewModel: InboxViewModel,
     uid: Long,
     onBack: () -> Unit,
+    onReply: (org.freedomsuite.inbox.data.MailMessageEntity) -> Unit,
 ) {
     LaunchedEffect(uid) {
         viewModel.openMessage(uid)
@@ -57,6 +59,13 @@ fun MessageDetailScreen(
                         onBack()
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (message != null) {
+                        IconButton(onClick = { onReply(message!!) }) {
+                            Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = "Reply")
+                        }
                     }
                 },
             )

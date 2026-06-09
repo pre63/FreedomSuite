@@ -32,6 +32,16 @@ class InboxRepository(context: Context) {
 
     fun hasAccount(): Boolean = accountStore.hasAccount()
 
+    fun getAccount() = accountStore.getAccount()
+
+    fun saveMailboxExtras(aliases: List<String>, ownedDomains: List<String>) {
+        accountStore.updateMailboxExtras(aliases, ownedDomains)
+    }
+
+    fun signOut() {
+        accountStore.clearAccount()
+    }
+
     fun observeFolder(folder: String): Flow<List<MailMessageEntity>> = dao.observeFolder(folder)
 
     fun observeFolderSearch(folder: String, query: String): Flow<List<MailMessageEntity>> =
@@ -98,7 +108,7 @@ class InboxRepository(context: Context) {
         val client = imapClient(account)
         return runCatching {
             client.connect(account, password).getOrThrow()
-            val summaries = client.fetchFolder(folder, limit = 50).getOrThrow()
+            val summaries = client.fetchFolder(folder, limit = SYNC_LIMIT).getOrThrow()
             val isInbox = folder.equals("INBOX", ignoreCase = true)
             val entities = mutableListOf<MailMessageEntity>()
             for (summary in summaries) {
@@ -115,7 +125,6 @@ class InboxRepository(context: Context) {
                 }
                 entities += entity
             }
-            dao.clearFolder(folder)
             dao.upsertAll(entities)
             client.disconnect()
             entities.size
@@ -380,13 +389,13 @@ class InboxRepository(context: Context) {
         )
     }
 
-    fun signOut() {
-        accountStore.clearAccount()
-    }
-
     private fun imapClient(account: MailAccount) =
         ImapClientFactory.create(plainText = account.plainText)
 
     private fun smtpClient(account: MailAccount) =
         SmtpClientFactory.create(account, plainText = account.plainText)
+
+    companion object {
+        const val SYNC_LIMIT = 100
+    }
 }

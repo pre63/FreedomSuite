@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
@@ -58,6 +59,7 @@ fun MessageListScreen(
     viewModel: InboxViewModel,
     onMessageClick: (Long) -> Unit,
     onCompose: () -> Unit,
+    onSettings: () -> Unit,
 ) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -106,6 +108,9 @@ fun MessageListScreen(
                         }
                         IconButton(onClick = { viewModel.refresh() }) {
                             Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        }
+                        IconButton(onClick = onSettings) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
                         IconButton(onClick = onCompose) {
                             Icon(Icons.Default.Edit, contentDescription = "Compose")
