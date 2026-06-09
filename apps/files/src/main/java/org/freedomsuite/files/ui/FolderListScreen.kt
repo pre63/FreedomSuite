@@ -3,6 +3,8 @@ package org.freedomsuite.files.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -20,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -57,12 +61,32 @@ fun FolderListScreen(
     val snackbar = remember { SnackbarHostState() }
     var showCreateDialog by remember { mutableStateOf(false) }
     var newFolderName by remember { mutableStateOf("") }
+    var folderToDelete by remember { mutableStateOf<FolderWithCount?>(null) }
 
     LaunchedEffect(status, error) {
         (status ?: error)?.let {
             snackbar.showSnackbar(it)
             viewModel.clearMessages()
         }
+    }
+
+    if (folderToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { folderToDelete = null },
+            title = { Text("Delete folder?") },
+            text = { Text("“${folderToDelete!!.name}” and all ${folderToDelete!!.fileCount} files will be removed.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteFolder(folderToDelete!!.id)
+                        folderToDelete = null
+                    },
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToDelete = null }) { Text("Cancel") }
+            },
+        )
     }
 
     if (showCreateDialog) {
@@ -133,14 +157,26 @@ fun FolderListScreen(
                 )
             }
             items(folders, key = { it.id }) { folder ->
-                FolderCard(folder = folder, onClick = { onOpenFolder(folder.id) })
+                FolderCard(
+                    folder = folder,
+                    onClick = { onOpenFolder(folder.id) },
+                    onDelete = if (folder.kind == FolderKind.CUSTOM.name) {
+                        { folderToDelete = folder }
+                    } else {
+                        null
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun FolderCard(folder: FolderWithCount, onClick: () -> Unit) {
+private fun FolderCard(
+    folder: FolderWithCount,
+    onClick: () -> Unit,
+    onDelete: (() -> Unit)?,
+) {
     val subtitle = when (runCatching { FolderKind.valueOf(folder.kind) }.getOrNull()) {
         FolderKind.PHOTOS -> "Photos"
         FolderKind.DOCUMENTS -> "Documents"
@@ -152,7 +188,11 @@ private fun FolderCard(folder: FolderWithCount, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Icon(Icons.Default.Folder, contentDescription = null)
             Text(
                 text = folder.name,
@@ -166,6 +206,12 @@ private fun FolderCard(folder: FolderWithCount, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
+        }
+        if (onDelete != null) {
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete folder")
+            }
+        }
         }
     }
 }

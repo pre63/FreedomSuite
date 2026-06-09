@@ -1,6 +1,9 @@
 package org.freedomsuite.files.ui
 
 import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -59,6 +63,16 @@ fun FileDetailScreen(
 ) {
     var file by remember { mutableStateOf<FileItemEntity?>(null) }
     var showDelete by remember { mutableStateOf(false) }
+    var pendingExport by remember { mutableStateOf<FileItemEntity?>(null) }
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri: Uri? ->
+        val entity = pendingExport ?: return@rememberLauncherForActivityResult
+        if (uri != null) {
+            viewModel.exportFileToUri(entity, uri)
+        }
+        pendingExport = null
+    }
     val isLoading by viewModel.isLoading.collectAsState()
     val extractedText by viewModel.extractedText.collectAsState()
     val similarFaces by viewModel.similarFaces.collectAsState()
@@ -104,6 +118,14 @@ fun FileDetailScreen(
                     if (!extractedText.isNullOrBlank()) {
                         IconButton(onClick = { viewModel.copyExtractedText(context) }) {
                             Icon(Icons.Default.ContentCopy, contentDescription = "Copy all text")
+                        }
+                    }
+                    file?.let { current ->
+                        IconButton(onClick = {
+                            pendingExport = current
+                            exportLauncher.launch(current.displayName)
+                        }) {
+                            Icon(Icons.Default.Share, contentDescription = "Export")
                         }
                     }
                     IconButton(onClick = { showDelete = true }) {

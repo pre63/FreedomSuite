@@ -119,6 +119,21 @@ class FilesViewModel(application: Application) : AndroidViewModel(application) {
 
     fun readFileBytes(entity: FileItemEntity): ByteArray = repository.readFileBytes(entity)
 
+    fun exportFileToUri(entity: FileItemEntity, uri: Uri) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            runCatching {
+                val bytes = repository.readFileBytes(entity)
+                getApplication<Application>().contentResolver.openOutputStream(uri)?.use {
+                    it.write(bytes)
+                } ?: error("Could not open export destination")
+            }.onSuccess { _status.value = "Exported ${entity.displayName}" }
+                .onFailure { _error.value = it.message ?: "Export failed" }
+            _isLoading.value = false
+        }
+    }
+
     fun extractTextFromImage(fileId: String) {
         viewModelScope.launch {
             val file = repository.getFile(fileId) ?: return@launch

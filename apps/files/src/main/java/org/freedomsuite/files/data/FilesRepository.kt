@@ -249,8 +249,21 @@ class FilesRepository(context: Context) {
                     .put("encryptedDataBase64", Base64.getEncoder().encodeToString(encryptedBytes)),
             )
         }
+        val analysisArray = JSONArray()
+        dao.getAllAnalysis().forEach { analysis ->
+            analysisArray.put(
+                JSONObject()
+                    .put("fileId", analysis.fileId)
+                    .put("objectLabels", analysis.objectLabels)
+                    .put("ocrText", analysis.ocrText)
+                    .put("faceEmbeddingsJson", analysis.faceEmbeddingsJson)
+                    .put("searchBlob", analysis.searchBlob)
+                    .put("indexedAtEpochMs", analysis.indexedAtEpochMs),
+            )
+        }
         root.put("folders", folderArray)
         root.put("files", fileArray)
+        root.put("image_analysis", analysisArray)
         return root.toString()
     }
 
@@ -289,6 +302,24 @@ class FilesRepository(context: Context) {
                     ),
                 )
                 imported++
+            }
+            if (root.has("image_analysis")) {
+                val analysis = root.getJSONArray("image_analysis")
+                for (i in 0 until analysis.length()) {
+                    val item = analysis.getJSONObject(i)
+                    dao.upsertAnalysis(
+                        ImageAnalysisEntity(
+                            fileId = item.getString("fileId"),
+                            objectLabels = item.optString("objectLabels", ""),
+                            ocrText = item.optString("ocrText", ""),
+                            faceEmbeddingsJson = item.optString("faceEmbeddingsJson", ""),
+                            searchBlob = item.optString("searchBlob", ""),
+                            indexedAtEpochMs = item.optLong("indexedAtEpochMs", System.currentTimeMillis()),
+                        ),
+                    )
+                }
+            } else {
+                indexAllImages()
             }
             imported
         }
