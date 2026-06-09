@@ -30,7 +30,7 @@ class MainActivity : FragmentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background,
                     ) {
-                        InboxApp()
+                        InboxApp(launchIntent = intent)
                     }
                 }
             }

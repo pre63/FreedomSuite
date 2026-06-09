@@ -1,5 +1,6 @@
 package org.freedomsuite.inbox.ui
 
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -10,6 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import org.freedomsuite.core.searchapi.SearchBridge
+import org.freedomsuite.core.searchapi.SearchDeepLinkHandler
 import org.freedomsuite.core.ui.AccountSetupScreen
 
 object InboxRoutes {
@@ -17,12 +20,16 @@ object InboxRoutes {
     const val LIST = "list"
     const val MESSAGE = "message/{uid}"
     const val COMPOSE = "compose"
+    const val SETTINGS = "settings"
 
     fun message(uid: Long) = "message/$uid"
 }
 
 @Composable
-fun InboxApp(viewModel: InboxViewModel = viewModel()) {
+fun InboxApp(
+    viewModel: InboxViewModel = viewModel(),
+    launchIntent: Intent? = null,
+) {
     val navController = rememberNavController()
     val hasAccount by viewModel.hasAccount.collectAsState()
 
@@ -32,6 +39,19 @@ fun InboxApp(viewModel: InboxViewModel = viewModel()) {
                 popUpTo(InboxRoutes.SETUP) { inclusive = true }
             }
         }
+    }
+
+    LaunchedEffect(launchIntent, hasAccount) {
+        if (!hasAccount) return@LaunchedEffect
+        val link = SearchDeepLinkHandler.parse(launchIntent) ?: return@LaunchedEffect
+        if (link.source == SearchBridge.Source.MAIL) {
+            link.mailFolder?.let { viewModel.selectFolder(it) }
+            link.mailUid?.let { uid ->
+                viewModel.openMessage(uid, link.mailFolder)
+                navController.navigate(InboxRoutes.message(uid))
+            }
+        }
+        SearchDeepLinkHandler.consume(launchIntent)
     }
 
     NavHost(
@@ -58,7 +78,11 @@ fun InboxApp(viewModel: InboxViewModel = viewModel()) {
             MessageListScreen(
                 viewModel = viewModel,
                 onMessageClick = { uid -> navController.navigate(InboxRoutes.message(uid)) },
-                onCompose = { navController.navigate(InboxRoutes.COMPOSE) },
+                onCompose = {
+                    viewModel.clearComposeDraft()
+                    navController.navigate(InboxRoutes.COMPOSE)
+                },
+                onSettings = { navController.navigate(InboxRoutes.SETTINGS) },
             )
         }
         composable(
@@ -70,6 +94,10 @@ fun InboxApp(viewModel: InboxViewModel = viewModel()) {
                 viewModel = viewModel,
                 uid = uid,
                 onBack = { navController.popBackStack() },
+                onReply = { message ->
+                    viewModel.startReply(message)
+                    navController.navigate(InboxRoutes.COMPOSE)
+                },
             )
         }
         composable(InboxRoutes.COMPOSE) {
@@ -77,6 +105,17 @@ fun InboxApp(viewModel: InboxViewModel = viewModel()) {
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
                 onSent = { navController.popBackStack() },
+            )
+        }
+        composable(InboxRoutes.SETTINGS) {
+            InboxSettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onSignedOut = {
+                    navController.navigate(InboxRoutes.SETUP) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
             )
         }
     }

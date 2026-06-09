@@ -1,7 +1,11 @@
 package org.freedomsuite.calendar.ui
 
+import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.freedomsuite.core.searchapi.SearchBridge
+import org.freedomsuite.core.searchapi.SearchDeepLinkHandler
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,13 +16,26 @@ object CalendarRoutes {
     const val LIST = "list"
     const val EVENT = "event/{uid}"
     const val CREATE = "create"
+    const val EDIT = "event/{uid}/edit"
 
     fun event(uid: String) = "event/$uid"
+    fun edit(uid: String) = "event/$uid/edit"
 }
 
 @Composable
-fun CalendarApp(viewModel: CalendarViewModel = viewModel()) {
+fun CalendarApp(
+    viewModel: CalendarViewModel = viewModel(),
+    launchIntent: Intent? = null,
+) {
     val navController = rememberNavController()
+
+    LaunchedEffect(launchIntent) {
+        val link = SearchDeepLinkHandler.parse(launchIntent) ?: return@LaunchedEffect
+        if (link.source == SearchBridge.Source.CALENDAR) {
+            navController.navigate(CalendarRoutes.event(link.hitId))
+        }
+        SearchDeepLinkHandler.consume(launchIntent)
+    }
 
     NavHost(
         navController = navController,
@@ -40,6 +57,19 @@ fun CalendarApp(viewModel: CalendarViewModel = viewModel()) {
                 viewModel = viewModel,
                 uid = uid,
                 onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(CalendarRoutes.edit(uid)) },
+            )
+        }
+        composable(
+            route = CalendarRoutes.EDIT,
+            arguments = listOf(navArgument("uid") { type = NavType.StringType }),
+        ) { entry ->
+            val uid = entry.arguments?.getString("uid") ?: return@composable
+            EditEventScreen(
+                viewModel = viewModel,
+                uid = uid,
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() },
             )
         }
         composable(CalendarRoutes.CREATE) {
