@@ -96,7 +96,7 @@ fun FolderListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Freedom Files") },
+                title = { Text("Files") },
                 actions = {
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = 16.dp))

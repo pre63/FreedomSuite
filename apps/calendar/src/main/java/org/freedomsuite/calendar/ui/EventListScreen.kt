@@ -47,7 +47,7 @@ fun EventListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Freedom Calendar") },
+                title = { Text("Calendar") },
                 actions = {
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = 16.dp))
@@ -86,7 +86,7 @@ fun EventListScreen(
                 ) {
                     Text("No events", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Events stay on this device. Accept invites from Freedom Inbox, or create one here.",
+                        "Events stay on this device. Accept invites from Inbox, or create one here.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     )

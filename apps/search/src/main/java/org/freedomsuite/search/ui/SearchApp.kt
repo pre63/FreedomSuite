@@ -62,7 +62,7 @@ fun SearchApp(viewModel: SearchViewModel = viewModel()) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Freedom Search") })
+            TopAppBar(title = { Text("Search") })
         },
     ) { padding ->
         Column(
@@ -132,7 +132,7 @@ fun SearchApp(viewModel: SearchViewModel = viewModel()) {
                 totalHits == 0 -> {
                     EmptyState(
                         title = "No matches",
-                        body = "Try synonyms like “vehicle” for car, or index photos in Freedom Files first.",
+                        body = "Try synonyms like “vehicle” for car, or index photos in Files first.",
                     )
                 }
                 else -> {

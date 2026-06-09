@@ -61,7 +61,7 @@ private fun SuggestionBar(items: List<String>, onSuggestion: (String) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (items.isEmpty()) {
-            Text("Freedom Keyboard", modifier = Modifier.padding(8.dp))
+            Text("Keyboard", modifier = Modifier.padding(8.dp))
         } else {
             items.forEach { item ->
                 Text(

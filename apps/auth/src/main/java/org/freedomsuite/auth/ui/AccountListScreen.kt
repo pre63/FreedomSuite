@@ -71,7 +71,7 @@ fun AccountListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Freedom Auth") },
+                title = { Text("Auth") },
                 actions = {
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = 16.dp))

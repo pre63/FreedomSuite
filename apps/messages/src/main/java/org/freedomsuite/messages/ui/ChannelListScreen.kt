@@ -48,7 +48,7 @@ fun ChannelListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Freedom Messages") },
+                title = { Text("Messages") },
                 actions = {
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")

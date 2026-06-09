@@ -145,7 +145,7 @@ private fun InviteCard(
             } else {
                 if (!calendarInstalled) {
                     Text(
-                        text = "Install Freedom Calendar to add accepted events locally.",
+                        text = "Install Calendar to add accepted events locally.",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp),
                     )

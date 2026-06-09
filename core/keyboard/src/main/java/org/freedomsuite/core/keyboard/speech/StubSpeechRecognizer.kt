@@ -16,7 +16,7 @@ class StubSpeechRecognizer : LocalSpeechRecognizer {
         delay(200)
         emit(
             SpeechPartialResult(
-                text = "Install the English voice model in Freedom Keyboard settings.",
+                text = "Install the English voice model in Keyboard settings.",
                 isFinal = true,
             ),
         )

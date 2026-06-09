@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Freedom Keyboard</string>
-    <string name="keyboard_label">Freedom Keyboard</string>
+    <string name="app_name">Keyboard</string>
+    <string name="keyboard_label">Keyboard</string>
     <string name="voice_input_label">Freedom Voice Input</string>
-    <string name="settings_title">Freedom Keyboard</string>
+    <string name="settings_title">Keyboard</string>
     <string name="settings_subtitle">Private keyboard · local predictions · on-device dictation</string>
     <string name="enable_keyboard">Enable keyboard</string>
     <string name="choose_keyboard">Choose default keyboard</string>
