@@ -41,13 +41,16 @@ fun InboxApp(viewModel: InboxViewModel = viewModel()) {
         composable(InboxRoutes.SETUP) {
             val isLoading by viewModel.isLoading.collectAsState()
             val error by viewModel.error.collectAsState()
+            val suggestManual by viewModel.suggestManualSetup.collectAsState()
             AccountSetupScreen(
-                title = "Freedom Inbox",
-                subtitle = "Swipe to archive. mailbox.org ready. No tracking.",
+                title = "Inbox",
+                subtitle = "We find your mail server from your email domain. No tracking.",
                 isLoading = isLoading,
                 errorMessage = error,
-                onConfigure = { email, password ->
-                    viewModel.configureAccount(email, password)
+                connectButtonText = "Connect",
+                suggestManualSetup = suggestManual,
+                onConfigure = { email, password, manual ->
+                    viewModel.configureAccount(email, password, manual)
                 },
             )
         }

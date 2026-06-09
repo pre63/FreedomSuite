@@ -1,8 +1,8 @@
 package org.freedomsuite.core.account
 
 import android.content.Context
+import org.freedomsuite.core.account.discovery.MailServerSettings
 import org.freedomsuite.core.crypto.SecurePreferences
-import org.freedomsuite.core.network.isMailboxOrgDomain
 
 class AccountStore(context: Context) {
     private val prefs = SecurePreferences(context.applicationContext, PREFS_NAME)
@@ -19,7 +19,10 @@ class AccountStore(context: Context) {
             smtpPort = prefs.getInt(KEY_SMTP_PORT, 465),
             caldavUrl = prefs.getString(KEY_CALDAV_URL)
                 ?: org.freedomsuite.core.network.MailboxOrgDefaults.CALDAV_URL,
-            identities = listOf(EmailIdentity(email, "Primary", isDefault = true)),
+            plainText = prefs.getBoolean(KEY_PLAIN_TEXT, false),
+            aliases = prefs.getString(KEY_ALIASES)?.split(ALIAS_DELIMITER)?.filter { it.isNotBlank() }.orEmpty(),
+            ownedDomains = prefs.getString(KEY_OWNED_DOMAINS)?.split(ALIAS_DELIMITER)?.filter { it.isNotBlank() }.orEmpty(),
+            identities = buildIdentities(email, prefs.getString(KEY_ALIASES)),
         )
     }
 
@@ -32,6 +35,12 @@ class AccountStore(context: Context) {
         prefs.putString(KEY_SMTP_HOST, account.smtpHost)
         prefs.putInt(KEY_SMTP_PORT, account.smtpPort)
         prefs.putString(KEY_CALDAV_URL, account.caldavUrl)
+        prefs.putBoolean(KEY_PLAIN_TEXT, account.plainText)
+        prefs.putString(KEY_ALIASES, account.aliases.joinToString(ALIAS_DELIMITER))
+        prefs.putString(
+            KEY_OWNED_DOMAINS,
+            account.ownedDomains.joinToString(ALIAS_DELIMITER),
+        )
         prefs.putCharArray(KEY_PASSWORD, password)
     }
 
@@ -42,26 +51,33 @@ class AccountStore(context: Context) {
         prefs.remove(KEY_SMTP_HOST)
         prefs.remove(KEY_SMTP_PORT)
         prefs.remove(KEY_CALDAV_URL)
+        prefs.remove(KEY_PLAIN_TEXT)
+        prefs.remove(KEY_ALIASES)
+        prefs.remove(KEY_OWNED_DOMAINS)
         prefs.remove(KEY_PASSWORD)
     }
 
-    fun createMailboxOrgAccount(email: String): MailAccount {
-        return if (isMailboxOrgDomain(email)) {
-            MailAccount.mailboxOrg(email.trim())
-        } else {
-            MailAccount(
-                email = email.trim(),
-                imapHost = org.freedomsuite.core.network.MailboxOrgDefaults.IMAP_HOST,
-                imapPort = org.freedomsuite.core.network.MailboxOrgDefaults.IMAP_PORT,
-                smtpHost = org.freedomsuite.core.network.MailboxOrgDefaults.SMTP_HOST,
-                smtpPort = org.freedomsuite.core.network.MailboxOrgDefaults.SMTP_PORT_SSL,
-                caldavUrl = org.freedomsuite.core.network.MailboxOrgDefaults.CALDAV_URL,
-                identities = listOf(EmailIdentity(email.trim(), "Primary", isDefault = true)),
-            )
-        }
+    fun accountFromSettings(email: String, settings: MailServerSettings): MailAccount =
+        settings.toMailAccount(email).copy(
+            ownedDomains = listOfNotNull(
+                email.trim().substringAfter('@', "").lowercase().takeIf { it.isNotEmpty() },
+            ),
+            identities = listOf(EmailIdentity(email.trim(), "Primary", isDefault = true)),
+        )
+
+    private fun buildIdentities(primary: String, aliasesRaw: String?): List<EmailIdentity> {
+        val identities = mutableListOf(EmailIdentity(primary, "Primary", isDefault = true))
+        aliasesRaw?.split(ALIAS_DELIMITER)
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() && it.contains('@') }
+            ?.forEachIndexed { index, alias ->
+                identities += EmailIdentity(alias, "Alias ${index + 1}")
+            }
+        return identities
     }
 
     companion object {
+        private const val ALIAS_DELIMITER = ","
         private const val PREFS_NAME = "freedom_mail_account"
         private const val KEY_EMAIL = "email"
         private const val KEY_PASSWORD = "password"
@@ -70,5 +86,8 @@ class AccountStore(context: Context) {
         private const val KEY_SMTP_HOST = "smtp_host"
         private const val KEY_SMTP_PORT = "smtp_port"
         private const val KEY_CALDAV_URL = "caldav_url"
+        private const val KEY_PLAIN_TEXT = "plain_text"
+        private const val KEY_ALIASES = "aliases"
+        private const val KEY_OWNED_DOMAINS = "owned_domains"
     }
 }

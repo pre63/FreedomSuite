@@ -32,4 +32,10 @@ dependencies {
     implementation(project(":core:crypto"))
     implementation(project(":core:network"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.okhttp)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation("net.sf.kxml:kxml2:2.3.0")
 }

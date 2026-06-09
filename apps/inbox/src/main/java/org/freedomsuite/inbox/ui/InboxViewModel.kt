@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.freedomsuite.core.account.discovery.DevMailServer
+import org.freedomsuite.core.account.discovery.DiscoverySource
+import org.freedomsuite.core.account.discovery.MailServerSettings
+import org.freedomsuite.core.ui.ManualMailSettings
 import org.freedomsuite.inbox.data.InboxRepository
 import org.freedomsuite.inbox.data.MailMessageEntity
 import org.freedomsuite.protocol.ical.InviteResponseStatus
@@ -48,6 +52,9 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _suggestManualSetup = MutableStateFlow(false)
+    val suggestManualSetup: StateFlow<Boolean> = _suggestManualSetup.asStateFlow()
+
     private val _activeMessage = MutableStateFlow<MailMessageEntity?>(null)
     val activeMessage: StateFlow<MailMessageEntity?> = _activeMessage.asStateFlow()
 
@@ -61,20 +68,35 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun configureAccount(email: String, password: String) {
+    fun configureAccount(email: String, password: String, manual: ManualMailSettings? = null) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            repository.configureAccount(email, password)
+            _suggestManualSetup.value = false
+            val manualSettings = manual?.toMailServerSettings()
+            repository.configureAccount(email, password, manualSettings)
                 .onSuccess {
                     _hasAccount.value = true
                     loadFolders()
                     refresh()
                 }
-                .onFailure { _error.value = it.message ?: "Connection failed" }
+                .onFailure { failure ->
+                    _error.value = failure.message ?: "Connection failed"
+                    _suggestManualSetup.value = manual == null
+                }
             _isLoading.value = false
         }
     }
+
+    private fun ManualMailSettings.toMailServerSettings(): MailServerSettings = MailServerSettings(
+        imapHost = imapHost,
+        imapPort = imapPort,
+        smtpHost = smtpHost,
+        smtpPort = smtpPort,
+        plainText = imapPort == DevMailServer.IMAP_PORT && smtpPort == DevMailServer.SMTP_PORT,
+        source = DiscoverySource.MANUAL,
+        label = "manual",
+    )
 
     fun loadFolders() {
         viewModelScope.launch {
@@ -139,6 +161,23 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
                 .onFailure { _error.value = it.message ?: "Archive failed" }
         }
     }
+
+    fun reportSpam(folder: String, uid: Long) {
+        viewModelScope.launch {
+            repository.reportSpam(folder, uid)
+                .onFailure { _error.value = it.message ?: "Could not move to spam" }
+        }
+    }
+
+    fun markNotSpam(folder: String, uid: Long) {
+        viewModelScope.launch {
+            repository.markNotSpam(folder, uid)
+                .onFailure { _error.value = it.message ?: "Could not restore message" }
+            refresh()
+        }
+    }
+
+    fun isSpamFolder(folder: String): Boolean = repository.isSpamFolder(folder)
 
     fun sendMessage(to: String, subject: String, body: String, onSent: () -> Unit) {
         viewModelScope.launch {

@@ -24,17 +24,32 @@ object PrivacyHttpClient {
 
     private object ForbiddenHostInterceptor : Interceptor {
         private val blockedHostSuffixes = listOf(
+            // Google telemetry / ads (not used by Freedom Suite; block misconfigured libs)
             "googleapis.com",
             "google-analytics.com",
+            "app-measurement.com",
+            "googleadservices.com",
+            "doubleclick.net",
             "gstatic.com",
             "firebaseio.com",
             "crashlytics.com",
+            // Crash / analytics SDKs
             "sentry.io",
             "bugsnag.com",
             "datadoghq.com",
             "segment.io",
             "mixpanel.com",
             "amplitude.com",
+            "count.ly",
+            "posthog.com",
+            "newrelic.com",
+            "appcenter.ms",
+            "instabug.com",
+            // Social / attribution
+            "facebook.com",
+            "graph.facebook.com",
+            "adjust.com",
+            "appsflyer.com",
         )
 
         override fun intercept(chain: Interceptor.Chain): Response {
