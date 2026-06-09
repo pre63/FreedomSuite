@@ -3,19 +3,26 @@ package org.freedomsuite.calendar.ui
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import org.freedomsuite.calendar.reminder.ReminderOptions
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EventFormFields(
     title: String,
@@ -28,9 +35,14 @@ fun EventFormFields(
     onStartChange: (Long) -> Unit,
     endEpochMs: Long,
     onEndChange: (Long) -> Unit,
+    isAllDay: Boolean,
+    onAllDayChange: (Boolean) -> Unit,
+    reminderMinutesBefore: Int?,
+    onReminderChange: (Int?) -> Unit,
 ) {
     val context = LocalContext.current
     val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+    val dateOnly = DateFormat.getDateInstance(DateFormat.MEDIUM)
 
     OutlinedTextField(
         value = title,
@@ -57,7 +69,19 @@ fun EventFormFields(
             .padding(top = 8.dp),
         minLines = 4,
     )
-    Column(modifier = Modifier.padding(top = 16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        Text("All day")
+        Switch(
+            checked = isAllDay,
+            onCheckedChange = onAllDayChange,
+        )
+    }
+    Column(modifier = Modifier.padding(top = 8.dp)) {
         Text("Start")
         OutlinedButton(
             onClick = {
@@ -67,7 +91,15 @@ fun EventFormFields(
                     { _, year, month, day ->
                         val updated = Calendar.getInstance().apply {
                             timeInMillis = startEpochMs
-                            set(year, month, day)
+                            set(Calendar.YEAR, year)
+                            set(Calendar.MONTH, month)
+                            set(Calendar.DAY_OF_MONTH, day)
+                            if (isAllDay) {
+                                set(Calendar.HOUR_OF_DAY, 0)
+                                set(Calendar.MINUTE, 0)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }
                         }
                         onStartChange(updated.timeInMillis)
                     },
@@ -78,31 +110,36 @@ fun EventFormFields(
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(formatter.format(Date(startEpochMs)))
+            Text(
+                if (isAllDay) dateOnly.format(Date(startEpochMs))
+                else formatter.format(Date(startEpochMs)),
+            )
         }
-        OutlinedButton(
-            onClick = {
-                val cal = Calendar.getInstance().apply { timeInMillis = startEpochMs }
-                TimePickerDialog(
-                    context,
-                    { _, hour, minute ->
-                        val updated = Calendar.getInstance().apply {
-                            timeInMillis = startEpochMs
-                            set(Calendar.HOUR_OF_DAY, hour)
-                            set(Calendar.MINUTE, minute)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }
-                        onStartChange(updated.timeInMillis)
-                    },
-                    cal.get(Calendar.HOUR_OF_DAY),
-                    cal.get(Calendar.MINUTE),
-                    true,
-                ).show()
-            },
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-        ) {
-            Text("Change start time")
+        if (!isAllDay) {
+            OutlinedButton(
+                onClick = {
+                    val cal = Calendar.getInstance().apply { timeInMillis = startEpochMs }
+                    TimePickerDialog(
+                        context,
+                        { _, hour, minute ->
+                            val updated = Calendar.getInstance().apply {
+                                timeInMillis = startEpochMs
+                                set(Calendar.HOUR_OF_DAY, hour)
+                                set(Calendar.MINUTE, minute)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }
+                            onStartChange(updated.timeInMillis)
+                        },
+                        cal.get(Calendar.HOUR_OF_DAY),
+                        cal.get(Calendar.MINUTE),
+                        true,
+                    ).show()
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            ) {
+                Text("Change start time")
+            }
         }
     }
     Column(modifier = Modifier.padding(top = 12.dp)) {
@@ -115,7 +152,13 @@ fun EventFormFields(
                     { _, year, month, day ->
                         val updated = Calendar.getInstance().apply {
                             timeInMillis = endEpochMs
-                            set(year, month, day)
+                            set(Calendar.YEAR, year)
+                            set(Calendar.MONTH, month)
+                            set(Calendar.DAY_OF_MONTH, day)
+                            if (isAllDay) {
+                                set(Calendar.HOUR_OF_DAY, 23)
+                                set(Calendar.MINUTE, 59)
+                            }
                         }
                         onEndChange(updated.timeInMillis)
                     },
@@ -126,31 +169,51 @@ fun EventFormFields(
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(formatter.format(Date(endEpochMs)))
+            Text(
+                if (isAllDay) dateOnly.format(Date(endEpochMs))
+                else formatter.format(Date(endEpochMs)),
+            )
         }
-        OutlinedButton(
-            onClick = {
-                val cal = Calendar.getInstance().apply { timeInMillis = endEpochMs }
-                TimePickerDialog(
-                    context,
-                    { _, hour, minute ->
-                        val updated = Calendar.getInstance().apply {
-                            timeInMillis = endEpochMs
-                            set(Calendar.HOUR_OF_DAY, hour)
-                            set(Calendar.MINUTE, minute)
-                            set(Calendar.SECOND, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }
-                        onEndChange(updated.timeInMillis)
-                    },
-                    cal.get(Calendar.HOUR_OF_DAY),
-                    cal.get(Calendar.MINUTE),
-                    true,
-                ).show()
-            },
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        if (!isAllDay) {
+            OutlinedButton(
+                onClick = {
+                    val cal = Calendar.getInstance().apply { timeInMillis = endEpochMs }
+                    TimePickerDialog(
+                        context,
+                        { _, hour, minute ->
+                            val updated = Calendar.getInstance().apply {
+                                timeInMillis = endEpochMs
+                                set(Calendar.HOUR_OF_DAY, hour)
+                                set(Calendar.MINUTE, minute)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }
+                            onEndChange(updated.timeInMillis)
+                        },
+                        cal.get(Calendar.HOUR_OF_DAY),
+                        cal.get(Calendar.MINUTE),
+                        true,
+                    ).show()
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            ) {
+                Text("Change end time")
+            }
+        }
+    }
+    Column(modifier = Modifier.padding(top = 16.dp)) {
+        Text("Reminder")
+        FlowRow(
+            modifier = Modifier.padding(top = 8.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         ) {
-            Text("Change end time")
+            ReminderOptions.choices.forEach { minutes ->
+                FilterChip(
+                    selected = reminderMinutesBefore == minutes,
+                    onClick = { onReminderChange(minutes) },
+                    label = { Text(ReminderOptions.label(minutes)) },
+                )
+            }
         }
     }
 }

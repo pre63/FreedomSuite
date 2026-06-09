@@ -37,6 +37,8 @@ fun EditEventScreen(
     var location by remember { mutableStateOf("") }
     var startEpochMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var endEpochMs by remember { mutableLongStateOf(System.currentTimeMillis() + 3_600_000) }
+    var isAllDay by remember { mutableStateOf(false) }
+    var reminderMinutes by remember { mutableStateOf<Int?>(null) }
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val event by viewModel.activeEvent.collectAsState()
@@ -51,6 +53,8 @@ fun EditEventScreen(
             location = it.location.orEmpty()
             startEpochMs = it.startEpochMs
             endEpochMs = it.endEpochMs
+            isAllDay = it.isAllDay
+            reminderMinutes = it.reminderMinutesBefore
         }
     }
 
@@ -86,6 +90,10 @@ fun EditEventScreen(
                 onStartChange = { startEpochMs = it },
                 endEpochMs = endEpochMs,
                 onEndChange = { endEpochMs = it },
+                isAllDay = isAllDay,
+                onAllDayChange = { isAllDay = it },
+                reminderMinutesBefore = reminderMinutes,
+                onReminderChange = { reminderMinutes = it },
             )
             Button(
                 onClick = {
@@ -97,6 +105,8 @@ fun EditEventScreen(
                             location = location.ifBlank { null },
                             startEpochMs = startEpochMs,
                             endEpochMs = endEpochMs.coerceAtLeast(startEpochMs + 60_000),
+                            isAllDay = isAllDay,
+                            reminderMinutesBefore = reminderMinutes,
                             onSaved = onSaved,
                         )
                     }

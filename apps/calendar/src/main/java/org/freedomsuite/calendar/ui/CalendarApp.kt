@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.freedomsuite.calendar.reminder.EventReminderScheduler
 import org.freedomsuite.core.searchapi.SearchBridge
 import org.freedomsuite.core.searchapi.SearchDeepLinkHandler
 import androidx.navigation.NavType
@@ -30,6 +31,12 @@ fun CalendarApp(
     val navController = rememberNavController()
 
     LaunchedEffect(launchIntent) {
+        val reminderUid = launchIntent?.getStringExtra(EventReminderScheduler.EXTRA_EVENT_UID)
+        if (reminderUid != null) {
+            navController.navigate(CalendarRoutes.event(reminderUid))
+            launchIntent.removeExtra(EventReminderScheduler.EXTRA_EVENT_UID)
+            return@LaunchedEffect
+        }
         val link = SearchDeepLinkHandler.parse(launchIntent) ?: return@LaunchedEffect
         if (link.source == SearchBridge.Source.CALENDAR) {
             navController.navigate(CalendarRoutes.event(link.hitId))

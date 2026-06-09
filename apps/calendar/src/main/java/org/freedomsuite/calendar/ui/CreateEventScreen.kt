@@ -36,6 +36,8 @@ fun CreateEventScreen(
     val now = System.currentTimeMillis()
     var startEpochMs by remember { mutableLongStateOf(now + 3_600_000) }
     var endEpochMs by remember { mutableLongStateOf(now + 7_200_000) }
+    var isAllDay by remember { mutableStateOf(false) }
+    var reminderMinutes by remember { mutableStateOf<Int?>(15) }
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -71,6 +73,10 @@ fun CreateEventScreen(
                 onStartChange = { startEpochMs = it },
                 endEpochMs = endEpochMs,
                 onEndChange = { endEpochMs = it },
+                isAllDay = isAllDay,
+                onAllDayChange = { isAllDay = it },
+                reminderMinutesBefore = reminderMinutes,
+                onReminderChange = { reminderMinutes = it },
             )
             Button(
                 onClick = {
@@ -81,6 +87,8 @@ fun CreateEventScreen(
                             location = location.ifBlank { null },
                             startEpochMs = startEpochMs,
                             endEpochMs = endEpochMs.coerceAtLeast(startEpochMs + 60_000),
+                            isAllDay = isAllDay,
+                            reminderMinutesBefore = reminderMinutes,
                             onCreated = onCreated,
                         )
                     }

@@ -20,8 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import java.text.DateFormat
-import java.util.Date
+import org.freedomsuite.calendar.reminder.ReminderOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +35,6 @@ fun EventDetailScreen(
     }
 
     val event by viewModel.activeEvent.collectAsState()
-    val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
 
     Scaffold(
         topBar = {
@@ -61,9 +59,24 @@ fun EventDetailScreen(
                     .padding(16.dp),
             ) {
                 Text(
-                    text = "${formatter.format(Date(event!!.startEpochMs))} → ${formatter.format(Date(event!!.endEpochMs))}",
+                    text = AgendaGrouper.formatEventTime(event!!),
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                if (event!!.isAllDay) {
+                    Text(
+                        text = "All-day event",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                event!!.reminderMinutesBefore?.let {
+                    Text(
+                        text = "Reminder: ${ReminderOptions.label(it)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
                 event!!.location?.takeIf { it.isNotBlank() }?.let {
                     Text(text = it, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 8.dp))
                 }

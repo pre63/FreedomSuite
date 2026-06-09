@@ -60,11 +60,21 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
         location: String?,
         startEpochMs: Long,
         endEpochMs: Long,
+        isAllDay: Boolean = false,
+        reminderMinutesBefore: Int? = null,
         onCreated: (String) -> Unit,
     ) {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.createEvent(title, description, location, startEpochMs, endEpochMs)
+            repository.createEvent(
+                title = title,
+                description = description,
+                location = location,
+                startEpochMs = startEpochMs,
+                endEpochMs = endEpochMs,
+                isAllDay = isAllDay,
+                reminderMinutesBefore = reminderMinutesBefore,
+            )
                 .onSuccess { onCreated(it.uid) }
                 .onFailure { _error.value = it.message ?: "Create failed" }
             _isLoading.value = false
@@ -78,11 +88,22 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
         location: String?,
         startEpochMs: Long,
         endEpochMs: Long,
+        isAllDay: Boolean = false,
+        reminderMinutesBefore: Int? = null,
         onSaved: () -> Unit,
     ) {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.updateEvent(uid, title, description, location, startEpochMs, endEpochMs)
+            repository.updateEvent(
+                uid = uid,
+                title = title,
+                description = description,
+                location = location,
+                startEpochMs = startEpochMs,
+                endEpochMs = endEpochMs,
+                isAllDay = isAllDay,
+                reminderMinutesBefore = reminderMinutesBefore,
+            )
                 .onSuccess {
                     _activeEvent.value = it
                     onSaved()
